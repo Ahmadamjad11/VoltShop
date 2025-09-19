@@ -1,0 +1,71 @@
+import React from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+
+import Home from "./pages/Home";
+import Cart from "./pages/Cart";
+import Checkout from "./pages/Checkout";
+import Services from "./pages/Services";
+import Contact from "./pages/Contact";
+import CategoryPage from "./pages/CategoryPage";
+import CategoriesManager from "./admin/CategoriesManager";
+import AdminLogin from "./admin/AdminLogin.jsx";
+
+import AdminDashboard from "./admin/AdminDashboard";
+import ProductsManager from "./admin/ProductsManager";
+import OrdersManager from "./admin/OrdersManager";
+
+import ProtectedRoute from "./routes/ProtectedRoute";
+
+export default function App() {
+  return (
+    <Routes>
+      {/* Public */}
+      <Route path="/" element={<Home />} />
+      <Route path="/cart" element={<Cart />} />
+      <Route path="/checkout" element={<Checkout />} />
+      <Route path="/services" element={<Services />} />
+      <Route path="/contact" element={<Contact />} />
+      <Route path="/category/:cat" element={<CategoryPage />} />
+      
+      {/* Admin */}
+      <Route path="/admin/login" element={<AdminLogin />} />
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute>
+            <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/products"
+        element={
+          <ProtectedRoute>
+            <ProductsManager />
+          </ProtectedRoute>
+        }
+        
+      />
+      
+<Route
+  path="/admin/categories"
+  element={
+    <ProtectedRoute>
+      <CategoriesManager />
+    </ProtectedRoute>
+  }
+/>
+      <Route
+        path="/admin/orders"
+        element={
+          <ProtectedRoute>
+            <OrdersManager />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* fallback */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}

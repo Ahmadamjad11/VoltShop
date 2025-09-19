@@ -1,0 +1,2 @@
+.checkout-page { max-width:900px; margin:24px auto; padding:20px; background:white; border-radius:8px; }
+.checkout-form input, .checkout-form textarea, .checkout-form select { width:100%; padding:10px; margin-bottom:10px; border-radius:6px; border:1px solid #ddd; }

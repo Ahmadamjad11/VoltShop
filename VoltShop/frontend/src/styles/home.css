@@ -1,0 +1,3 @@
+.home-main { padding:20px; max-width:1200px; margin:auto; }
+.products-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px; margin-top:12px; }
+.info { text-align:center; color:#6b7280; }
