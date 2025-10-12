@@ -5,6 +5,29 @@ import "../styles/navbar.css";
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
+
+  // تحديث عدد العناصر في السلة
+  useEffect(() => {
+    const updateCartCount = () => {
+      const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+      const count = cart.reduce((total, item) => total + item.quantity, 0);
+      setCartCount(count);
+    };
+
+    updateCartCount();
+    
+    // الاستماع لتغييرات السلة
+    window.addEventListener('storage', updateCartCount);
+    
+    // تحديث كل ثانية للتأكد
+    const interval = setInterval(updateCartCount, 1000);
+
+    return () => {
+      window.removeEventListener('storage', updateCartCount);
+      clearInterval(interval);
+    };
+  }, []);
 
   // إغلاق القائمة عند تغيير حجم النافذة
   useEffect(() => {
@@ -47,7 +70,7 @@ export default function Navbar() {
           </Link>
           <Link to="/cart" onClick={() => setIsMenuOpen(false)}>
             <i className="fas fa-shopping-cart"></i> سلة
-            <span className="cart-count"></span>
+            {cartCount > 0 && <span className="cart-count">{cartCount}</span>}
           </Link>
           <Link to="/services" onClick={() => setIsMenuOpen(false)}>
             <i className="fas fa-tools"></i> التركيبات والصيانة

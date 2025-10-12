@@ -19,10 +19,8 @@ app.use(cors());           // للسماح بالطلبات من أي دومين
 app.use(express.json());   // لتحويل JSON تلقائيًا
 
 // ربط قاعدة البيانات MongoDB
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
+const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/voltshop";
+mongoose.connect(MONGO_URI)
 .then(() => console.log("MongoDB connected"))
 .catch(err => console.log("MongoDB connection error:", err));
 
