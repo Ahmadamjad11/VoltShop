@@ -13,6 +13,8 @@ import AdminLogin from "./admin/AdminLogin.jsx";
 import AdminDashboard from "./admin/AdminDashboard";
 import ProductsManager from "./admin/ProductsManager";
 import OrdersManager from "./admin/OrdersManager";
+import ServicesManager from "./admin/ServicesManager";
+import ContactsManager from "./admin/ContactsManager";
 
 import ProtectedRoute from "./routes/ProtectedRoute";
 
@@ -60,6 +62,22 @@ export default function App() {
         element={
           <ProtectedRoute>
             <OrdersManager />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/services"
+        element={
+          <ProtectedRoute>
+            <ServicesManager />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/contacts"
+        element={
+          <ProtectedRoute>
+            <ContactsManager />
           </ProtectedRoute>
         }
       />

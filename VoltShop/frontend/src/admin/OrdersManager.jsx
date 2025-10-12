@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import API from "../api/api";
 import "../styles/admin.css";
 
@@ -48,7 +49,29 @@ export default function OrdersManager() {
       console.log("📦 Updating order:", id, "to status:", status);
       const response = await API.put(`/orders/${id}`, { status });
       console.log("✅ Update response:", response.data);
-      alert("تم تحديث حالة الطلب بنجاح");
+      
+      // Show success message
+      const message = document.createElement('div');
+      message.className = 'success-message';
+      message.textContent = 'تم تحديث حالة الطلب بنجاح!';
+      message.style.position = 'fixed';
+      message.style.top = '100px';
+      message.style.right = '20px';
+      message.style.zIndex = '9999';
+      message.style.background = '#f0fdf4';
+      message.style.border = '1px solid #bbf7d0';
+      message.style.color = '#16a34a';
+      message.style.padding = '1rem';
+      message.style.borderRadius = '0.5rem';
+      message.style.boxShadow = '0 4px 6px -1px rgb(0 0 0 / 0.1)';
+      document.body.appendChild(message);
+      
+      setTimeout(() => {
+        if (document.body.contains(message)) {
+          document.body.removeChild(message);
+        }
+      }, 3000);
+      
       load();
     } catch (err) {
       console.error("❌ Error updating status:", err);
@@ -101,27 +124,67 @@ export default function OrdersManager() {
     return orders.filter(order => order.status === status).length;
   };
 
-  if (loading) return <div className="loading">جاري تحميل الطلبات...</div>;
-  if (error) return <div className="error">{error}</div>;
+  if (loading) return (
+    <div className="admin-layout">
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>جاري تحميل الطلبات...</p>
+      </div>
+    </div>
+  );
+  
+  if (error) return (
+    <div className="admin-layout">
+      <div className="error-message">
+        <i className="fas fa-exclamation-triangle"></i>
+        {error}
+        <button onClick={load} className="btn-primary" style={{ marginTop: '1rem' }}>
+          <i className="fas fa-refresh"></i>
+          إعادة المحاولة
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="admin-layout">
       <aside className="admin-sidebar">
-        <h3>Volt Admin</h3>
-        <nav>
-          <a href="/admin">الرئيسية</a>
-          <a href="/admin/products">المنتجات</a>
-          <a href="/admin/orders" className="active">الطلبات</a>
-          <a href="/admin/categories">التصنيفات</a>
+        <div className="sidebar-header">
+          <h3>
+            <i className="fas fa-bolt"></i>
+            Volt Admin
+          </h3>
+        </div>
+        <nav className="sidebar-nav">
+          <Link to="/admin" className="nav-link">
+            <i className="fas fa-tachometer-alt"></i>
+            لوحة التحكم
+          </Link>
+          <Link to="/admin/products" className="nav-link">
+            <i className="fas fa-box"></i>
+            إدارة المنتجات
+          </Link>
+          <Link to="/admin/orders" className="nav-link active">
+            <i className="fas fa-shopping-cart"></i>
+            إدارة الطلبات
+          </Link>
+          <Link to="/admin/categories" className="nav-link">
+            <i className="fas fa-tags"></i>
+            إدارة الفئات
+          </Link>
         </nav>
       </aside>
       
       <main className="admin-main">
         <div className="admin-header">
-          <h2>إدارة الطلبات</h2>
+          <div className="header-content">
+            <h1>إدارة الطلبات</h1>
+            <p>متابعة وتحديث حالة الطلبات</p>
+          </div>
           <div className="header-actions">
-            <button onClick={load} className="btn-refresh">
-              <span className="icon">🔄</span> تحديث القائمة
+            <button onClick={load} className="refresh-btn" disabled={loading}>
+              <i className={`fas fa-sync-alt ${loading ? 'fa-spin' : ''}`}></i>
+              تحديث القائمة
             </button>
             <div className="orders-summary">
               <span>إجمالي الطلبات: {orders.length}</span>
@@ -177,7 +240,9 @@ export default function OrdersManager() {
 
         {filteredOrders.length === 0 ? (
           <div className="empty-state">
+            <i className="fas fa-shopping-cart"></i>
             <p>لا توجد طلبات {activeTab !== "all" ? `في حالة ${getStatusText(activeTab)}` : ""}</p>
+            <p>سيتم عرض الطلبات هنا عند وصولها</p>
           </div>
         ) : (
           <div className="table-container">
@@ -229,6 +294,7 @@ export default function OrdersManager() {
                           onClick={() => viewOrderDetails(order)}
                           title="عرض تفاصيل الطلب"
                         >
+                          <i className="fas fa-eye"></i>
                           التفاصيل
                         </button>
                         
@@ -238,6 +304,7 @@ export default function OrdersManager() {
                             onClick={() => changeStatus(order._id, "processing")}
                             title="وضع قيد التحضير"
                           >
+                            <i className="fas fa-cog"></i>
                             تحضير
                           </button>
                         )}
@@ -248,6 +315,7 @@ export default function OrdersManager() {
                             onClick={() => changeStatus(order._id, "shipped")}
                             title="تم شحن الطلب"
                           >
+                            <i className="fas fa-truck"></i>
                             شحن
                           </button>
                         )}
@@ -258,6 +326,7 @@ export default function OrdersManager() {
                             onClick={() => changeStatus(order._id, "delivered")}
                             title="تم تسليم الطلب"
                           >
+                            <i className="fas fa-check-circle"></i>
                             تسليم
                           </button>
                         )}
@@ -268,6 +337,7 @@ export default function OrdersManager() {
                             onClick={() => changeStatus(order._id, "completed")}
                             title="تم إكمال الطلب"
                           >
+                            <i className="fas fa-check-double"></i>
                             إكمال
                           </button>
                         )}
@@ -278,16 +348,23 @@ export default function OrdersManager() {
                             onClick={() => changeStatus(order._id, "cancelled")}
                             title="إلغاء الطلب"
                           >
+                            <i className="fas fa-times-circle"></i>
                             إلغاء
                           </button>
                         )}
                         
                         {order.status === "completed" && (
-                          <span className="completed-label">تم الإكمال</span>
+                          <span className="completed-label">
+                            <i className="fas fa-check-circle"></i>
+                            تم الإكمال
+                          </span>
                         )}
                         
                         {order.status === "cancelled" && (
-                          <span className="cancelled-label">ملغي</span>
+                          <span className="cancelled-label">
+                            <i className="fas fa-times-circle"></i>
+                            ملغي
+                          </span>
                         )}
                       </div>
                     </td>
