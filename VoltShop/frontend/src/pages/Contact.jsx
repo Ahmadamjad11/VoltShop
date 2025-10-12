@@ -5,22 +5,24 @@ import "../styles/contact.css";
 import API from "../api/api";
 
 export default function Contact() {
-  const [form, setForm] = useState({ 
-    name: "", 
-    email: "", 
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
     phone: "",
     subject: "",
-    message: "" 
+    message: "",
   });
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  // 💡 حالة جديدة لحفظ بيانات الرسالة التي تم إرسالها بنجاح (للعرض في صفحة النجاح)
+  const [sentData, setSentData] = useState(null);
   const [error, setError] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm({
       ...form,
-      [name]: value
+      [name]: value,
     });
   };
 
@@ -30,47 +32,47 @@ export default function Contact() {
     setError("");
 
     try {
-      // إرسال رسالة التواصل
+      // 💡 تحسين: لا حاجة لإضافة timestamp و status هنا، دع الباك إند يقوم بذلك.
       const contactData = {
         ...form,
-        timestamp: new Date().toISOString(),
-        status: 'new'
       };
 
       // إرسال الرسالة إلى الباك إند
-      await API.post("/contacts", contactData);
-      
-      // محاكاة الإرسال
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      // 💡 تحسين: استخدم الرد من الخادم إذا كان يحتوي على البيانات الكاملة (بما في ذلك الـ ID)
+      const response = await API.post("/contacts", contactData);
+
+      // 💡 حل الخطأ: حفظ البيانات المرسلة (أو البيانات المستلمة من الرد) قبل مسح النموذج.
+      setSentData(response.data.data || contactData);
+
       setSubmitted(true);
+      // مسح النموذج بعد الحفظ
       setForm({ name: "", email: "", phone: "", subject: "", message: "" });
+
+      // 💡 تحسين: إزالة محاكاة الإرسال (setTimeout) لأن API.post هو عملية غير متزامنة بالفعل.
       
-      // رسالة نجاح
-      const message = document.createElement('div');
-      message.className = 'success-message';
-      message.textContent = 'تم إرسال رسالتك بنجاح! سنتواصل معك قريباً.';
-      message.style.position = 'fixed';
-      message.style.top = '100px';
-      message.style.right = '20px';
-      message.style.zIndex = '9999';
-      message.style.background = '#f0fdf4';
-      message.style.border = '1px solid #bbf7d0';
-      message.style.color = '#16a34a';
-      message.style.padding = '1rem';
-      message.style.borderRadius = '0.5rem';
-      message.style.boxShadow = '0 4px 6px -1px rgb(0 0 0 / 0.1)';
+      // رسالة نجاح منبثقة
+      const message = document.createElement("div");
+      message.className = "success-message";
+      message.textContent = "تم إرسال رسالتك بنجاح! سنتواصل معك قريباً.";
+      message.style.cssText = `
+        position: fixed; top: 100px; right: 20px; z-index: 9999;
+        background: #f0fdf4; border: 1px solid #bbf7d0; color: #16a34a;
+        padding: 1rem; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+      `;
       document.body.appendChild(message);
-      
+
       setTimeout(() => {
         if (document.body.contains(message)) {
           document.body.removeChild(message);
         }
       }, 3000);
-      
     } catch (err) {
       console.error(err);
-      setError("حدث خطأ أثناء إرسال الرسالة. يرجى المحاولة مرة أخرى.");
+      // 💡 تحسين: محاولة استخلاص رسالة الخطأ من الخادم إن وجدت
+      const errorMessage =
+        err.response?.data?.message ||
+        "حدث خطأ أثناء إرسال الرسالة. يرجى المحاولة مرة أخرى.";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -89,16 +91,37 @@ export default function Contact() {
               <h1>شكراً لتواصلك معنا!</h1>
               <p>تم استلام رسالتك بنجاح، وسنتواصل معك في أقرب وقت ممكن.</p>
               <div className="success-details">
-                <p><strong>رقم الرسالة:</strong> #{Date.now().toString().slice(-6)}</p>
-                <p><strong>الموضوع:</strong> {form.subject}</p>
-                <p><strong>وقت الإرسال:</strong> {new Date().toLocaleString('ar-SA')}</p>
+                {/* 💡 حل الخطأ: استخدام sentData بدلاً من form */}
+                <p>
+                  <strong>رقم الرسالة:</strong> #
+                  {sentData?._id || Date.now().toString().slice(-6)}
+                </p>
+                <p>
+                  <strong>المرسل:</strong> {sentData?.name}
+                </p>
+                <p>
+                  <strong>الموضوع:</strong> {sentData?.subject}
+                </p>
+                <p>
+                  <strong>وقت الإرسال:</strong>{" "}
+                  {new Date().toLocaleString("ar-SA")}
+                </p>
               </div>
               <div className="success-actions">
-                <button onClick={() => setSubmitted(false)} className="btn-primary">
+                <button
+                  onClick={() => {
+                    setSubmitted(false);
+                    setSentData(null); // مسح البيانات المرسلة عند العودة
+                  }}
+                  className="btn-primary"
+                >
                   <i className="fas fa-plus"></i>
                   إرسال رسالة أخرى
                 </button>
-                <button onClick={() => window.location.href = "/"} className="btn-outline">
+                <button
+                  onClick={() => (window.location.href = "/")}
+                  className="btn-outline"
+                >
                   <i className="fas fa-home"></i>
                   العودة للرئيسية
                 </button>
@@ -111,6 +134,7 @@ export default function Contact() {
     );
   }
 
+  // ... (بقية كود العرض للنموذج العادي)
   return (
     <>
       <Navbar />
@@ -140,7 +164,7 @@ export default function Contact() {
           <div className="contact-content">
             <div className="contact-info">
               <h2>معلومات التواصل</h2>
-              
+
               <div className="contact-methods">
                 <div className="contact-method">
                   <div className="method-icon">
@@ -196,7 +220,10 @@ export default function Contact() {
                 <div className="faq-list">
                   <div className="faq-item">
                     <h4>كم يستغرق التسليم؟</h4>
-                    <p>التسليم خلال 2-3 أيام عمل داخل الرياض، و5-7 أيام للمدن الأخرى.</p>
+                    <p>
+                      التسليم خلال 2-3 أيام عمل داخل الرياض، و5-7 أيام للمدن
+                      الأخرى.
+                    </p>
                   </div>
                   <div className="faq-item">
                     <h4>هل تقدمون خدمة التركيب؟</h4>
@@ -204,7 +231,10 @@ export default function Contact() {
                   </div>
                   <div className="faq-item">
                     <h4>ما هي سياسة الاسترداد؟</h4>
-                    <p>يمكن استرداد المنتجات خلال 14 يوماً من الشراء بشرط عدم الاستخدام.</p>
+                    <p>
+                      يمكن استرداد المنتجات خلال 14 يوماً من الشراء بشرط عدم
+                      الاستخدام.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -215,14 +245,14 @@ export default function Contact() {
                 <h2>أرسل لنا رسالة</h2>
                 <p>املأ النموذج وسنتواصل معك خلال 24 ساعة</p>
               </div>
-              
+
               {error && (
                 <div className="error-message">
                   <i className="fas fa-exclamation-triangle"></i>
                   {error}
                 </div>
               )}
-              
+
               <form className="contact-form" onSubmit={submit}>
                 <div className="form-row">
                   <div className="form-group">
@@ -256,7 +286,7 @@ export default function Contact() {
                     />
                   </div>
                 </div>
-                
+
                 <div className="form-row">
                   <div className="form-group">
                     <label>
@@ -294,7 +324,7 @@ export default function Contact() {
                     </select>
                   </div>
                 </div>
-                
+
                 <div className="form-group">
                   <label>
                     <i className="fas fa-comment"></i>
@@ -310,8 +340,12 @@ export default function Contact() {
                     disabled={loading}
                   ></textarea>
                 </div>
-                
-                <button type="submit" className="submit-button" disabled={loading}>
+
+                <button
+                  type="submit"
+                  className="submit-button"
+                  disabled={loading}
+                >
                   {loading ? (
                     <>
                       <i className="fas fa-spinner fa-spin"></i>
@@ -324,7 +358,7 @@ export default function Contact() {
                     </>
                   )}
                 </button>
-        </form>
+              </form>
             </div>
           </div>
         </div>

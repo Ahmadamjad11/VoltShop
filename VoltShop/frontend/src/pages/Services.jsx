@@ -5,7 +5,7 @@ import API from "../api/api";
 import "../styles/services.css";
 
 export default function Services() {
-  const [formData, setFormData] = useState({
+  const initialFormState = {
     name: "",
     phone: "",
     email: "",
@@ -15,11 +15,14 @@ export default function Services() {
     description: "",
     preferredDate: "",
     preferredTime: ""
-  });
+  };
 
+  const [formData, setFormData] = useState(initialFormState);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  // 💡 حالة جديدة لحفظ بيانات الطلب المرسلة بنجاح
+  const [sentData, setSentData] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -35,29 +38,30 @@ export default function Services() {
     setError("");
 
     try {
-      // إرسال طلب الخدمة إلى الباك إند
+      // 💡 تحسين: نترك حقل status و createdAt للباك إند.
+      // نرسل formData كما هو.
       const serviceRequest = {
         ...formData,
-        status: "pending",
-        createdAt: new Date().toISOString()
       };
 
-      await API.post("/services", serviceRequest);
+      const response = await API.post("/services", serviceRequest);
+
+      // 💡 حل الخطأ: حفظ البيانات المرسلة قبل مسح النموذج.
+      setSentData(response.data.data || formData);
       
-      // Show success message
+      // إفراغ النموذج
+      setFormData(initialFormState);
+      setSubmitted(true);
+      
+      // رسالة نجاح منبثقة
       const message = document.createElement('div');
-      message.className = 'success-message';
+      message.className = 'success-message-popup'; // تم تغيير اسم الكلاس لتجنب التعارض
       message.textContent = 'تم إرسال طلب الخدمة بنجاح!';
-      message.style.position = 'fixed';
-      message.style.top = '100px';
-      message.style.right = '20px';
-      message.style.zIndex = '9999';
-      message.style.background = '#f0fdf4';
-      message.style.border = '1px solid #bbf7d0';
-      message.style.color = '#16a34a';
-      message.style.padding = '1rem';
-      message.style.borderRadius = '0.5rem';
-      message.style.boxShadow = '0 4px 6px -1px rgb(0 0 0 / 0.1)';
+      message.style.cssText = `
+        position: fixed; top: 100px; right: 20px; z-index: 9999;
+        background: #f0fdf4; border: 1px solid #bbf7d0; color: #16a34a;
+        padding: 1rem; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+      `;
       document.body.appendChild(message);
       
       setTimeout(() => {
@@ -66,10 +70,13 @@ export default function Services() {
         }
       }, 3000);
 
-      setSubmitted(true);
     } catch (err) {
       console.error("Error submitting service request:", err);
-      setError("حدث خطأ أثناء إرسال الطلب. يرجى المحاولة مرة أخرى.");
+      // 💡 تحسين: محاولة استخلاص رسالة الخطأ من الخادم
+      const errorMessage =
+        err.response?.data?.message ||
+        "حدث خطأ أثناء إرسال الطلب. يرجى المحاولة مرة أخرى.";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -80,19 +87,32 @@ export default function Services() {
       <>
         <Navbar />
         <div className="services-page">
-          <div className="success-message">
+          <div className="success-card"> {/* تغيير اسم الكلاس ليكون أكثر وصفاً */}
             <div className="success-icon">
               <i className="fas fa-check-circle"></i>
             </div>
             <h2>شكراً لتواصلك معنا!</h2>
             <p>تم استلام طلب الخدمة بنجاح، وسنتواصل معك في أقرب وقت لتأكيد الموعد.</p>
             <div className="success-details">
-              <p><strong>رقم الطلب:</strong> #{Date.now().toString().slice(-6)}</p>
-              <p><strong>نوع الخدمة:</strong> {formData.serviceType}</p>
-              <p><strong>التاريخ المفضل:</strong> {formData.preferredDate || "سيتم الاتفاق عليه"}</p>
+              {/* 💡 حل الخطأ: استخدام sentData بدلاً من formData */}
+              <p>
+                <strong>رقم الطلب:</strong> #
+                {sentData?._id || Date.now().toString().slice(-6)}
+              </p>
+              <p><strong>نوع الخدمة:</strong> {sentData?.serviceType}</p>
+              <p>
+                <strong>التاريخ المفضل:</strong>{" "}
+                {sentData?.preferredDate || "سيتم الاتفاق عليه"}
+              </p>
             </div>
             <div className="success-actions">
-              <button onClick={() => setSubmitted(false)} className="btn-primary">
+              <button
+                onClick={() => {
+                  setSubmitted(false);
+                  setSentData(null); // مسح البيانات عند العودة
+                }}
+                className="btn-primary"
+              >
                 <i className="fas fa-plus"></i>
                 طلب خدمة أخرى
               </button>
@@ -108,6 +128,7 @@ export default function Services() {
     );
   }
 
+  // ... (بقية كود العرض للنموذج العادي كما هو)
   return (
     <>
       <Navbar />
@@ -208,14 +229,14 @@ export default function Services() {
                 <h2>طلب خدمة صيانة أو تركيب</h2>
                 <p>املأ النموذج وسنتواصل معك خلال 24 ساعة</p>
               </div>
-              
+
               {error && (
                 <div className="error-message">
                   <i className="fas fa-exclamation-triangle"></i>
                   {error}
                 </div>
               )}
-              
+
               <form className="maintenance-form" onSubmit={handleSubmit}>
                 <div className="form-section">
                   <h3>

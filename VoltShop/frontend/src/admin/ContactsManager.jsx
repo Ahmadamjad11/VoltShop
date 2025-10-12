@@ -9,6 +9,7 @@ export default function ContactsManager() {
   const [error, setError] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedContact, setSelectedContact] = useState(null);
+  const [replyText, setReplyText] = useState(""); // 💡 جديد: حالة نص الرد
   const [showModal, setShowModal] = useState(false);
   const [updating, setUpdating] = useState(false);
 
@@ -31,21 +32,28 @@ export default function ContactsManager() {
     }
   };
 
+  // 💡 دالة موحدة لتحديث الحالة (تشمل الرد)
   const updateContactStatus = async (contactId, newStatus, reply = "") => {
     try {
       setUpdating(true);
-      await API.patch(`/contacts/${contactId}/status`, { 
-        status: newStatus,
-        reply: reply
-      });
+      const updateData = { status: newStatus };
+
+      // إذا كانت الحالة "replied" أو "closed" ونحن نرسل رداً جديداً
+      if (newStatus === 'replied' && reply) {
+          updateData.reply = reply;
+          updateData.repliedAt = new Date().toISOString(); // تسجيل وقت الرد
+      }
+
+      await API.patch(`/contacts/${contactId}/status`, updateData);
       
       // تحديث القائمة
-      loadContacts();
+      await loadContacts();
       
       // إغلاق المودال إذا كان مفتوحاً
       if (showModal) {
         setShowModal(false);
         setSelectedContact(null);
+        setReplyText(""); // مسح نص الرد
       }
       
       // رسالة نجاح
@@ -63,16 +71,11 @@ export default function ContactsManager() {
     const messageEl = document.createElement('div');
     messageEl.className = 'success-message';
     messageEl.textContent = message;
-    messageEl.style.position = 'fixed';
-    messageEl.style.top = '100px';
-    messageEl.style.right = '20px';
-    messageEl.style.zIndex = '9999';
-    messageEl.style.background = '#f0fdf4';
-    messageEl.style.border = '1px solid #bbf7d0';
-    messageEl.style.color = '#16a34a';
-    messageEl.style.padding = '1rem';
-    messageEl.style.borderRadius = '0.5rem';
-    messageEl.style.boxShadow = '0 4px 6px -1px rgb(0 0 0 / 0.1)';
+    messageEl.style.cssText = `
+        position: fixed; top: 100px; right: 20px; z-index: 9999;
+        background: #f0fdf4; border: 1px solid #bbf7d0; color: #16a34a;
+        padding: 1rem; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+      `;
     document.body.appendChild(messageEl);
     
     setTimeout(() => {
@@ -120,19 +123,49 @@ export default function ContactsManager() {
     const date = new Date(dateString);
     return date.toLocaleDateString('ar-SA');
   };
-
-  const openContactDetails = (contact) => {
+  
+  // 💡 دالة لمعالجة فتح المودال
+  const openContactDetails = async (contact) => {
     setSelectedContact(contact);
+    setReplyText(contact.reply || ""); // تعيين نص الرد الحالي
     setShowModal(true);
-  };
 
+    // تحديث الحالة إلى 'read' إذا كانت 'new'
+    if (contact.status === 'new' && !updating) {
+        // نستخدم دالة تحديث الحالة، لكن بدون رسالة نجاح منبثقة هنا
+        // Update local state temporarily for immediate UI feedback
+        const updatedContacts = contacts.map(c => 
+            c._id === contact._id ? { ...c, status: 'read' } : c
+        );
+        setContacts(updatedContacts);
+        
+        await API.patch(`/contacts/${contact._id}/status`, { status: 'read' });
+        
+        // Load the full list again to ensure correct contact count in tabs
+        loadContacts();
+    }
+  };
+  
   const closeModal = () => {
     setShowModal(false);
     setSelectedContact(null);
+    setReplyText("");
   };
+
+  // 💡 دالة لإرسال الرد
+  const handleReplySubmit = () => {
+      if (selectedContact && replyText.trim()) {
+          // تحديث الحالة إلى 'replied' مع نص الرد
+          updateContactStatus(selectedContact._id, 'replied', replyText.trim());
+      } else {
+          alert("الرجاء كتابة نص الرد قبل الإرسال.");
+      }
+  };
+
 
   return (
     <div className="admin-layout">
+      {/* ... (الجزء الخاص بالقائمة الجانبية كما هو) ... */}
       <aside className="admin-sidebar">
         <div className="sidebar-header">
           <h3>
@@ -176,8 +209,9 @@ export default function ContactsManager() {
           </button>
         </div>
       </aside>
-
+      
       <main className="admin-main">
+        {/* ... (الجزء الخاص برأس الصفحة والتصفيات كما هو) ... */}
         <div className="admin-header">
           <div className="header-content">
             <h1>إدارة رسائل التواصل</h1>
@@ -197,7 +231,7 @@ export default function ContactsManager() {
             className={selectedStatus === "all" ? "tab-active" : ""}
             onClick={() => setSelectedStatus("all")}
           >
-            جميع الرسائل ({contacts.length})
+            جميع الرسائل ({contacts.filter(c => selectedStatus === 'all' || c.status === selectedStatus).length}) {/* تعديل بسيط لحساب العدد بشكل صحيح */}
           </button>
           <button 
             className={selectedStatus === "new" ? "tab-active" : ""}
@@ -227,8 +261,9 @@ export default function ContactsManager() {
 
         {/* جدول الرسائل */}
         <div className="table-section">
-          <h2>رسائل التواصل ({contacts.length})</h2>
+          <h2>رسائل التواصل ({contacts.filter(c => selectedStatus === 'all' || c.status === selectedStatus).length})</h2>
           
+          {/* ... (حالة التحميل والخطأ والحالة الفارغة) ... */}
           {loading ? (
             <div className="loading-container">
               <div className="loading-spinner"></div>
@@ -278,7 +313,7 @@ export default function ContactsManager() {
                       </td>
                       <td>
                         <div className="message-preview">
-                          <small>{contact.message?.substring(0, 100)}...</small>
+                          <small>{contact.message?.substring(0, 50)}...</small>
                         </div>
                       </td>
                       <td>
@@ -297,10 +332,14 @@ export default function ContactsManager() {
                           <button 
                             onClick={() => openContactDetails(contact)}
                             className="btn-details"
-                            title="عرض التفاصيل"
+                            title="عرض التفاصيل والرد"
+                            disabled={updating}
                           >
                             <i className="fas fa-eye"></i>
                           </button>
+                          
+                          {/* تم إزالة أزرار الإجراءات من الجدول. يفضل تنفيذها من داخل المودال لتحسين تجربة المستخدم */}
+                          {/* يمكن الإبقاء عليها إذا كنت تفضل التحديث السريع */}
                           
                           {contact.status === 'new' && (
                             <button 
@@ -310,28 +349,6 @@ export default function ContactsManager() {
                               title="تأكيد القراءة"
                             >
                               <i className="fas fa-eye"></i>
-                            </button>
-                          )}
-                          
-                          {contact.status === 'read' && (
-                            <button 
-                              onClick={() => updateContactStatus(contact._id, 'replied')}
-                              className="btn-shipped"
-                              disabled={updating}
-                              title="تم الرد"
-                            >
-                              <i className="fas fa-reply"></i>
-                            </button>
-                          )}
-                          
-                          {(contact.status === 'read' || contact.status === 'replied') && (
-                            <button 
-                              onClick={() => updateContactStatus(contact._id, 'closed')}
-                              className="btn-completed"
-                              disabled={updating}
-                              title="إغلاق الرسالة"
-                            >
-                              <i className="fas fa-check-circle"></i>
                             </button>
                           )}
                         </div>
@@ -344,54 +361,105 @@ export default function ContactsManager() {
           )}
         </div>
 
-        {/* مودال تفاصيل الرسالة */}
+        {/* مودال تفاصيل الرسالة والرد */}
         {showModal && selectedContact && (
           <div className="modal-overlay" onClick={closeModal}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
-                <h3>تفاصيل الرسالة</h3>
+                <h3>تفاصيل الرسالة - {selectedContact.name}</h3>
                 <button className="close-modal" onClick={closeModal}>
                   <i className="fas fa-times"></i>
                 </button>
               </div>
               
               <div className="modal-body">
-                <div className="order-details-section">
+                
+                {/* معلومات المرسل الأساسية */}
+                <div className="detail-card">
                   <h4>معلومات المرسل</h4>
-                  <div className="customer-info">
+                  <div className="detail-grid">
                     <p><strong>الاسم:</strong> {selectedContact.name}</p>
-                    <p><strong>البريد الإلكتروني:</strong> {selectedContact.email}</p>
-                    <p><strong>رقم الهاتف:</strong> {selectedContact.phone || 'غير محدد'}</p>
-                    <p><strong>الموضوع:</strong> {selectedContact.subject}</p>
-                    <p><strong>تاريخ الإرسال:</strong> {formatDate(selectedContact.createdAt)}</p>
-                    <p><strong>الحالة:</strong> {getStatusBadge(selectedContact.status)}</p>
+                    <p><strong>البريد:</strong> {selectedContact.email}</p>
+                    <p><strong>الهاتف:</strong> {selectedContact.phone || 'غير محدد'}</p>
                     <p><strong>الأولوية:</strong> {getPriorityBadge(selectedContact.priority)}</p>
+                    <p><strong>الحالة:</strong> {getStatusBadge(selectedContact.status)}</p>
+                    <p><strong>تاريخ الإرسال:</strong> {formatDate(selectedContact.createdAt)}</p>
                   </div>
                 </div>
 
-                <div className="order-details-section">
-                  <h4>محتوى الرسالة</h4>
+                {/* محتوى الرسالة */}
+                <div className="detail-card">
+                  <h4>
+                    <i className="fas fa-quote-left"></i>
+                    الموضوع: {selectedContact.subject}
+                  </h4>
                   <div className="message-content">
                     <p>{selectedContact.message}</p>
                   </div>
                 </div>
 
-                {selectedContact.reply && (
-                  <div className="order-details-section">
-                    <h4>الرد</h4>
+                {/* جزء الردود السابقة */}
+                {(selectedContact.reply || selectedContact.status === 'replied') && (
+                  <div className="detail-card reply-section">
+                    <h4>
+                      <i className="fas fa-history"></i>
+                      آخر رد تم إرساله
+                    </h4>
                     <div className="reply-content">
-                      <p>{selectedContact.reply}</p>
+                      <p>{selectedContact.reply || 'لم يتم تسجيل نص الرد'}</p>
                       {selectedContact.repliedAt && (
                         <small>تم الرد في: {formatDate(selectedContact.repliedAt)}</small>
                       )}
                     </div>
                   </div>
                 )}
+                
+                {/* 💡 جديد: حقل الرد */}
+                <div className="detail-card reply-input-section">
+                  <h4>
+                    <i className="fas fa-reply"></i>
+                    إرسال رد جديد
+                  </h4>
+                  <textarea
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      rows="4"
+                      placeholder="اكتب ردك على العميل هنا..."
+                      disabled={updating}
+                  ></textarea>
+                </div>
+                
+                {/* 💡 أزرار الإجراءات داخل المودال */}
+                <div className="modal-actions">
+                    <button 
+                        onClick={handleReplySubmit}
+                        className="btn-primary"
+                        disabled={updating || !replyText.trim()}
+                    >
+                        {updating ? (
+                            <i className="fas fa-spinner fa-spin"></i>
+                        ) : (
+                            <i className="fas fa-paper-plane"></i>
+                        )}
+                        {selectedContact.status === 'replied' ? 'تعديل الرد وتأكيد' : 'إرسال الرد وتغيير الحالة'}
+                    </button>
+                    
+                    {/* زر إغلاق الرسالة */}
+                    <button 
+                        onClick={() => updateContactStatus(selectedContact._id, 'closed')}
+                        className="btn-secondary"
+                        disabled={updating}
+                    >
+                        <i className="fas fa-check-circle"></i>
+                        إغلاق الرسالة
+                    </button>
+                </div>
+
               </div>
               
               <div className="modal-footer">
-                <button className="btn-close" onClick={closeModal}>
-                  إغلاق
+                <button className="btn-outline" onClick={closeModal}>
+                  إغلاق نافذة التفاصيل
                 </button>
               </div>
             </div>
