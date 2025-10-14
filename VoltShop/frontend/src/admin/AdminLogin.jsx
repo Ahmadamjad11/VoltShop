@@ -100,12 +100,7 @@ export default function AdminLogin() {
               </>
             )}
           </button>
-          
-          <div className="login-info">
-            <p><strong>بيانات الدخول التجريبية:</strong></p>
-            <p>اسم المستخدم: <code>admin</code></p>
-            <p>كلمة المرور: <code>admin123</code></p>
-          </div>
+        
         </form>
       </div>
     </div>

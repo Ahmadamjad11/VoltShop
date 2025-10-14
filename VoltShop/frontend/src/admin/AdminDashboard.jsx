@@ -7,6 +7,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState({
     products: 0,
     orders: 0,
+    completedOrders: 0,
     categories: 0,
     services: 0,
     contacts: 0,
@@ -21,24 +22,16 @@ export default function AdminDashboard() {
   const loadStats = async () => {
     try {
       setLoading(true);
-      const [productsRes, ordersRes, categoriesRes, servicesRes, contactsRes] = await Promise.all([
-        API.get("/products").catch(() => ({ data: [] })),
-        API.get("/orders").catch(() => ({ data: [] })),
-        API.get("/categories").catch(() => ({ data: [] })),
-        API.get("/services").catch(() => ({ data: [] })),
-        API.get("/contacts").catch(() => ({ data: [] }))
-      ]);
-
-      const orders = ordersRes.data || [];
-      const totalSales = orders.reduce((sum, order) => sum + (order.total || 0), 0);
-
+      const res = await API.get("/admin/stats").catch(() => ({ data: {} }));
+      const data = res.data || {};
       setStats({
-        products: productsRes.data?.length || 0,
-        orders: orders.length,
-        categories: categoriesRes.data?.length || 0,
-        services: servicesRes.data?.length || 0,
-        contacts: contactsRes.data?.length || 0,
-        totalSales
+        products: data.products || 0,
+        orders: data.orders || 0,
+        completedOrders: data.completedOrders  || 0,
+        categories: data.categories || 0,
+        services: data.services || 0,
+        contacts: data.contacts || 0,
+        totalSales: data.totalSales || 0
       });
     } catch (err) {
       console.error("Error loading stats:", err);
@@ -58,44 +51,36 @@ export default function AdminDashboard() {
       <aside className="admin-sidebar">
         <div className="sidebar-header">
           <h3>
-            <i className="fas fa-bolt"></i>
-            Volt Admin
+            <i className="fas fa-bolt"></i> Volt Admin
           </h3>
         </div>
         <nav className="sidebar-nav">
           <Link to="/admin" className="nav-link active">
-            <i className="fas fa-tachometer-alt"></i>
-            لوحة التحكم
+            <i className="fas fa-tachometer-alt"></i> لوحة التحكم
           </Link>
           <Link to="/admin/products" className="nav-link">
-            <i className="fas fa-box"></i>
-            إدارة المنتجات
+            <i className="fas fa-box"></i> إدارة المنتجات
           </Link>
           <Link to="/admin/orders" className="nav-link">
-            <i className="fas fa-shopping-cart"></i>
-            إدارة الطلبات
+            <i className="fas fa-shopping-cart"></i> إدارة الطلبات
           </Link>
           <Link to="/admin/categories" className="nav-link">
-            <i className="fas fa-tags"></i>
-            إدارة الفئات
+            <i className="fas fa-tags"></i> إدارة الفئات
           </Link>
           <Link to="/admin/services" className="nav-link">
-            <i className="fas fa-tools"></i>
-            إدارة الخدمات
+            <i className="fas fa-tools"></i> إدارة الخدمات
           </Link>
           <Link to="/admin/contacts" className="nav-link">
-            <i className="fas fa-envelope"></i>
-            إدارة الرسائل
+            <i className="fas fa-envelope"></i> إدارة الرسائل
           </Link>
         </nav>
         <div className="sidebar-footer">
           <button className="logout-btn" onClick={handleLogout}>
-            <i className="fas fa-sign-out-alt"></i>
-            تسجيل الخروج
+            <i className="fas fa-sign-out-alt"></i> تسجيل الخروج
           </button>
         </div>
       </aside>
-      
+
       <main className="admin-main">
         <div className="admin-header">
           <div className="header-content">
@@ -104,189 +89,160 @@ export default function AdminDashboard() {
           </div>
           <div className="header-actions">
             <button onClick={loadStats} className="refresh-btn" disabled={loading}>
-              <i className={`fas fa-sync-alt ${loading ? 'fa-spin' : ''}`}></i>
-              تحديث البيانات
+              <i className={`fas fa-sync-alt ${loading ? "fa-spin" : ""}`}></i> تحديث البيانات
             </button>
           </div>
         </div>
-        
+
         {/* إحصائيات سريعة */}
         <div className="stats-grid">
           <div className="stat-card">
-            <div className="stat-icon">
-              <i className="fas fa-box"></i>
-            </div>
+            <div className="stat-icon"><i className="fas fa-box"></i></div>
             <div className="stat-content">
               <h3>{loading ? "..." : stats.products}</h3>
               <p>المنتجات</p>
             </div>
           </div>
-          
+
           <div className="stat-card">
-            <div className="stat-icon">
-              <i className="fas fa-shopping-cart"></i>
-            </div>
+            <div className="stat-icon"><i className="fas fa-shopping-cart"></i></div>
             <div className="stat-content">
               <h3>{loading ? "..." : stats.orders}</h3>
-              <p>الطلبات</p>
+              <p>الطلبات الكلية</p>
             </div>
           </div>
-          
+
           <div className="stat-card">
-            <div className="stat-icon">
-              <i className="fas fa-tags"></i>
+            <div className="stat-icon"><i className="fas fa-check-circle"></i></div>
+            <div className="stat-content">
+              <h3>{loading ? "..." : stats.completedOrders}</h3>
+              <p>الطلبات المكتملة</p>
             </div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-icon"><i className="fas fa-tags"></i></div>
             <div className="stat-content">
               <h3>{loading ? "..." : stats.categories}</h3>
               <p>الفئات</p>
             </div>
           </div>
-          
+
           <div className="stat-card">
-            <div className="stat-icon">
-              <i className="fas fa-tools"></i>
-            </div>
+            <div className="stat-icon"><i className="fas fa-tools"></i></div>
             <div className="stat-content">
               <h3>{loading ? "..." : stats.services}</h3>
               <p>طلبات الخدمات</p>
             </div>
           </div>
-          
+
           <div className="stat-card">
-            <div className="stat-icon">
-              <i className="fas fa-envelope"></i>
-            </div>
+            <div className="stat-icon"><i className="fas fa-envelope"></i></div>
             <div className="stat-content">
               <h3>{loading ? "..." : stats.contacts}</h3>
               <p>رسائل التواصل</p>
             </div>
           </div>
-          
+
           <div className="stat-card">
-            <div className="stat-icon">
-              <i className="fas fa-dollar-sign"></i>
-            </div>
+            <div className="stat-icon"><i className="fas fa-dollar-sign"></i></div>
             <div className="stat-content">
               <h3>{loading ? "..." : `${stats.totalSales} د.أ`}</h3>
               <p>إجمالي المبيعات</p>
             </div>
           </div>
         </div>
-        
+
         {/* بطاقات الإدارة */}
         <div className="dashboard-grid">
           <div className="dashboard-card">
-            <div className="card-icon">
-              <i className="fas fa-box"></i>
-            </div>
+            <div className="card-icon"><i className="fas fa-box"></i></div>
             <div className="card-content">
               <h3>إدارة المنتجات</h3>
               <p>إضافة وتعديل وحذف المنتجات</p>
               <Link to="/admin/products" className="card-link">
-                <i className="fas fa-arrow-left"></i>
-                إدارة المنتجات
+                <i className="fas fa-arrow-left"></i> إدارة المنتجات
               </Link>
             </div>
           </div>
-          
+
           <div className="dashboard-card">
-            <div className="card-icon">
-              <i className="fas fa-shopping-cart"></i>
-            </div>
+            <div className="card-icon"><i className="fas fa-shopping-cart"></i></div>
             <div className="card-content">
               <h3>إدارة الطلبات</h3>
               <p>متابعة الطلبات وتحديث حالاتها</p>
               <Link to="/admin/orders" className="card-link">
-                <i className="fas fa-arrow-left"></i>
-                إدارة الطلبات
+                <i className="fas fa-arrow-left"></i> إدارة الطلبات
               </Link>
             </div>
           </div>
-          
+
           <div className="dashboard-card">
-            <div className="card-icon">
-              <i className="fas fa-tags"></i>
-            </div>
+            <div className="card-icon"><i className="fas fa-tags"></i></div>
             <div className="card-content">
               <h3>إدارة الفئات</h3>
               <p>إدارة فئات المنتجات وتنظيمها</p>
               <Link to="/admin/categories" className="card-link">
-                <i className="fas fa-arrow-left"></i>
-                إدارة الفئات
+                <i className="fas fa-arrow-left"></i> إدارة الفئات
               </Link>
             </div>
           </div>
-          
+
           <div className="dashboard-card">
-            <div className="card-icon">
-              <i className="fas fa-tools"></i>
-            </div>
+            <div className="card-icon"><i className="fas fa-tools"></i></div>
             <div className="card-content">
               <h3>إدارة الخدمات</h3>
               <p>إدارة طلبات التركيبات والصيانة</p>
               <Link to="/admin/services" className="card-link">
-                <i className="fas fa-arrow-left"></i>
-                إدارة الخدمات
+                <i className="fas fa-arrow-left"></i> إدارة الخدمات
               </Link>
             </div>
           </div>
-          
+
           <div className="dashboard-card">
-            <div className="card-icon">
-              <i className="fas fa-envelope"></i>
-            </div>
+            <div className="card-icon"><i className="fas fa-envelope"></i></div>
             <div className="card-content">
               <h3>إدارة الرسائل</h3>
               <p>إدارة رسائل العملاء والاستفسارات</p>
               <Link to="/admin/contacts" className="card-link">
-                <i className="fas fa-arrow-left"></i>
-                إدارة الرسائل
+                <i className="fas fa-arrow-left"></i> إدارة الرسائل
               </Link>
             </div>
           </div>
-          
+
           <div className="dashboard-card">
-            <div className="card-icon">
-              <i className="fas fa-chart-line"></i>
-            </div>
+            <div className="card-icon"><i className="fas fa-chart-line"></i></div>
             <div className="card-content">
               <h3>التقارير والإحصائيات</h3>
               <p>عرض إحصائيات المبيعات والأداء</p>
               <button className="card-link" disabled>
-                <i className="fas fa-arrow-left"></i>
-                قريباً
+                <i className="fas fa-arrow-left"></i> قريباً
               </button>
             </div>
           </div>
         </div>
-        
+
         {/* إجراءات سريعة */}
         <div className="quick-actions">
           <h3>إجراءات سريعة</h3>
           <div className="actions-grid">
             <Link to="/admin/products" className="action-btn">
-              <i className="fas fa-plus"></i>
-              إضافة منتج جديد
+              <i className="fas fa-plus"></i> إضافة منتج جديد
             </Link>
             <Link to="/admin/categories" className="action-btn">
-              <i className="fas fa-plus"></i>
-              إضافة فئة جديدة
+              <i className="fas fa-plus"></i> إضافة فئة جديدة
             </Link>
             <Link to="/admin/orders" className="action-btn">
-              <i className="fas fa-eye"></i>
-              عرض الطلبات الجديدة
+              <i className="fas fa-eye"></i> عرض الطلبات الجديدة
             </Link>
             <Link to="/admin/services" className="action-btn">
-              <i className="fas fa-tools"></i>
-              طلبات الخدمات الجديدة
+              <i className="fas fa-tools"></i> طلبات الخدمات الجديدة
             </Link>
             <Link to="/admin/contacts" className="action-btn">
-              <i className="fas fa-envelope"></i>
-              الرسائل الجديدة
+              <i className="fas fa-envelope"></i> الرسائل الجديدة
             </Link>
             <Link to="/" className="action-btn">
-              <i className="fas fa-external-link-alt"></i>
-              زيارة المتجر
+              <i className="fas fa-external-link-alt"></i> زيارة المتجر
             </Link>
           </div>
         </div>
