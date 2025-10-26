@@ -87,6 +87,26 @@
   min-height: 100px;
 }
 
+/* Field errors */
+.field-error {
+  margin-top: 0.35rem;
+  color: #b91c1c;
+  font-size: 0.875rem;
+}
+
+/* Inline actions under address */
+.inline-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.map-link { 
+  color: #0E84FF; 
+  font-size: 0.9rem; 
+}
+
 .payment-methods {
   display: grid;
   grid-template-columns: 1fr 1fr;

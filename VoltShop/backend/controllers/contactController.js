@@ -1,4 +1,20 @@
 import Contact from '../models/Contact.js';
+import nodemailer from 'nodemailer';
+
+// simple transporter factory using env variables
+function buildTransporter() {
+  const host = process.env.SMTP_HOST;
+  const port = Number(process.env.SMTP_PORT || 587);
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  if (!host || !user || !pass) return null;
+  return nodemailer.createTransport({
+    host,
+    port,
+    secure: port === 465,
+    auth: { user, pass },
+  });
+}
 
 // إنشاء رسالة تواصل جديدة
 export const createContact = async (req, res) => {
@@ -181,11 +197,40 @@ export const updateContactStatus = async (req, res) => {
         message: 'الرسالة غير موجودة'
       });
     }
-    
+    // try to send email reply if applicable
+    let emailSent = false;
+    let emailError = null;
+    if (status === 'replied' && reply && contact.email) {
+      try {
+        const transporter = buildTransporter();
+        if (transporter) {
+          await transporter.sendMail({
+            from: process.env.FROM_EMAIL || process.env.SMTP_USER,
+            to: contact.email,
+            subject: `رد على رسالتك: ${contact.subject || 'استفسارك'}`,
+            text: reply,
+            html: `<div dir="rtl" style="font-family:Tahoma, Arial, sans-serif; line-height:1.8">
+                    <p>مرحباً ${contact.name || ''},</p>
+                    <p>${reply.replace(/\n/g, '<br/>')}</p>
+                    <hr/>
+                    <p style="color:#6b7280; font-size:12px">هذه رسالة آلية من VoltShop</p>
+                  </div>`
+          });
+          emailSent = true;
+        } else {
+          emailError = 'SMTP configuration missing';
+        }
+      } catch (e) {
+        emailError = e.message;
+        console.error('Failed to send reply email:', e);
+      }
+    }
+
     res.json({
       success: true,
       message: 'تم تحديث حالة الرسالة بنجاح',
-      data: contact
+      data: contact,
+      email: { sent: emailSent, error: emailError }
     });
   } catch (error) {
     console.error('Error updating contact status:', error);

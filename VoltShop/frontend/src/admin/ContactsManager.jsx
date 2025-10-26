@@ -2,8 +2,11 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import API from "../api/api";
 import "../styles/admin.css";
+import { useToast } from "../context/ToastContext.jsx";
 
 export default function ContactsManager() {
+  const { showToast } = useToast();
+
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -44,21 +47,27 @@ export default function ContactsManager() {
           updateData.repliedAt = new Date().toISOString(); // تسجيل وقت الرد
       }
 
-      await API.patch(`/contacts/${contactId}/status`, updateData);
-      
+      const res = await API.patch(`/contacts/${contactId}/status`, updateData);
+
       // تحديث القائمة
       await loadContacts();
-      
+
       // إغلاق المودال إذا كان مفتوحاً
       if (showModal) {
         setShowModal(false);
         setSelectedContact(null);
         setReplyText(""); // مسح نص الرد
       }
-      
-      // رسالة نجاح
-      showSuccessMessage("تم تحديث حالة الرسالة بنجاح!");
-      
+
+      // رسالة نجاح + نتيجة الإرسال البريدي إن وجد
+      const emailInfo = res?.data?.email;
+      if (newStatus === 'replied') {
+        if (emailInfo?.sent) showToast("تم إرسال البريد بنجاح");
+        else showToast(emailInfo?.error ? `تم تحديث الحالة لكن فشل إرسال البريد: ${emailInfo.error}` : "تم تحديث الحالة دون إرسال بريد (تحقق من SMTP)", "error");
+      } else {
+        showSuccessMessage("تم تحديث حالة الرسالة بنجاح!");
+      }
+
     } catch (err) {
       console.error(err);
       alert("خطأ في تحديث حالة الرسالة");
