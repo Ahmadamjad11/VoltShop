@@ -1,11 +1,15 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import "../styles/navbar.css";
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const [search, setSearch] = useState("");
+  const navigate = useNavigate();
+  const location = useLocation();
 
   // تحديث عدد العناصر في السلة
   useEffect(() => {
@@ -28,6 +32,43 @@ export default function Navbar() {
       clearInterval(interval);
     };
   }, []);
+
+  // Sync search box with URL ?q=
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const q = params.get("q") || "";
+    setSearch(q);
+  }, [location.search]);
+
+  // Debounce search typing to update URL automatically
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      const params = new URLSearchParams(location.search);
+      if (search) {
+        params.set("q", search);
+      } else {
+        params.delete("q");
+      }
+      // Only navigate if changed
+      if (params.toString() !== location.search.replace(/^\?/, '')) {
+        navigate({ pathname: "/", search: params.toString() });
+      }
+    }, 300);
+    return () => clearTimeout(handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
+
+  const onSearchSubmit = (e) => {
+    e.preventDefault();
+    const params = new URLSearchParams(location.search);
+    if (search) {
+      params.set("q", search);
+    } else {
+      params.delete("q");
+    }
+    navigate({ pathname: "/", search: params.toString() });
+    setIsMenuOpen(false);
+  };
 
   // إغلاق القائمة عند تغيير حجم النافذة
   useEffect(() => {
@@ -65,6 +106,16 @@ export default function Navbar() {
         </div>
         
         <div className={`navbar-right ${isMenuOpen ? 'active' : ''}`}>
+          <form className="navbar-search" onSubmit={onSearchSubmit} role="search">
+            <input
+              type="search"
+              placeholder="ابحث عن منتج..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              aria-label="بحث"
+            />
+            <button type="submit" className="btn-primary"><i className="fas fa-search"></i></button>
+          </form>
           <Link to="/" onClick={() => setIsMenuOpen(false)}>
             <i className="fas fa-home"></i> الرئيسية
           </Link>

@@ -17,12 +17,21 @@ import ServicesManager from "./admin/ServicesManager";
 import ContactsManager from "./admin/ContactsManager";
 
 import ProtectedRoute from "./routes/ProtectedRoute";
+const ProductDetails = React.lazy(() => import("./pages/ProductDetails"));
 
 export default function App() {
   return (
     <Routes>
       {/* Public */}
       <Route path="/" element={<Home />} />
+      <Route
+        path="/product/:id"
+        element={
+          <React.Suspense fallback={<div className="container" style={{ padding: '2rem' }}>جاري التحميل...</div>}>
+            <ProductDetails />
+          </React.Suspense>
+        }
+      />
       <Route path="/cart" element={<Cart />} />
       <Route path="/checkout" element={<Checkout />} />
       <Route path="/services" element={<Services />} />

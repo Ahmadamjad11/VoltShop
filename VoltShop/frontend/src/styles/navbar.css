@@ -39,18 +39,19 @@
 
 .navbar .logo i {
   margin-left: 0.5rem;
-  color: #2563eb;
+  color: #0E84FF;
   font-size: 1.75rem;
   transition: all 0.3s ease;
+  position: relative;
 }
 
 .navbar .logo:hover {
   transform: translateY(-1px);
-  color: #2563eb;
+  color: #0E84FF;
 }
 
 .navbar .logo:hover i {
-  color: #10b981;
+  color: #0466D6;
   transform: rotate(15deg) scale(1.1);
 }
 
@@ -58,6 +59,33 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+/* Search */
+.navbar-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #f3f4f6;
+  padding: 0.25rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.navbar-search input {
+  border: none;
+  background: transparent;
+  padding: 0.5rem 0.75rem;
+  min-width: 220px;
+  color: #111827;
+}
+
+.navbar-search input:focus {
+  outline: none;
+}
+
+.navbar-search .btn-primary {
+  padding: 0.45rem 0.75rem;
 }
 
 .navbar-right a {
@@ -81,12 +109,12 @@
 
 .navbar-right a:hover {
   background-color: #f3f4f6;
-  color: #2563eb;
+  color: #0E84FF;
   transform: translateY(-1px);
 }
 
 .navbar-right a:hover i {
-  color: #10b981;
+  color: #0466D6;
   transform: scale(1.1);
 }
 
@@ -146,7 +174,7 @@
 
 .hamburger.active span:nth-child(1) {
   transform: rotate(45deg) translate(5px, 5px);
-  background: #2563eb;
+  background: #0E84FF;
 }
 
 .hamburger.active span:nth-child(2) {
@@ -155,7 +183,7 @@
 
 .hamburger.active span:nth-child(3) {
   transform: rotate(-45deg) translate(5px, -5px);
-  background: #2563eb;
+  background: #0E84FF;
 }
 
 /* Mobile Responsive Design */
@@ -186,6 +214,14 @@
     display: flex;
     right: 0;
   }
+
+  .navbar-search {
+    width: 100%;
+    margin-bottom: 0.75rem;
+    padding: 0.35rem;
+  }
+
+  .navbar-search input { min-width: 0; width: 100%; }
   
   .navbar-right a {
     margin: 0.5rem 0;
@@ -200,7 +236,7 @@
   }
   
   .navbar-right a:hover {
-    border-right: 3px solid #2563eb;
+    border-right: 3px solid #0E84FF;
     background-color: #f9fafb;
     transform: translateX(-5px);
   }
@@ -236,7 +272,7 @@
     transform: translateX(-50%);
     width: 0;
     height: 2px;
-    background: linear-gradient(90deg, #2563eb, #10b981);
+    background: linear-gradient(90deg, #0E84FF, #22D3EE);
     transition: width 0.3s ease;
   }
   
