@@ -4,6 +4,8 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import API from "../api/api";
 import "../styles/home.css";
+import { useCart } from "../context/CartContext.jsx";
+import { useToast } from "../context/ToastContext.jsx";
 
 export default function ProductDetails() {
   const { id } = useParams();
@@ -12,7 +14,8 @@ export default function ProductDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [qty, setQty] = useState(1);
-  const [toast, setToast] = useState("");
+  const { addItem } = useCart();
+  const { showToast } = useToast();
 
   useEffect(() => {
     const load = async () => {
@@ -32,20 +35,8 @@ export default function ProductDetails() {
 
   const addToCart = () => {
     if (!product) return;
-    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-    const pid = product._id || product.id;
-    const existing = cart.find(c => c.id === pid);
-    if (existing) existing.quantity += qty; else cart.push({
-      id: pid,
-      name: product.name,
-      price: product.price,
-      image: product.image,
-      warranty: product.warranty,
-      quantity: qty
-    });
-    localStorage.setItem("cart", JSON.stringify(cart));
-    setToast("تمت الإضافة للسلة بنجاح!");
-    setTimeout(() => setToast(""), 2500);
+    addItem(product, qty);
+    showToast("تمت الإضافة للسلة بنجاح!");
   };
 
   return (
@@ -106,7 +97,7 @@ export default function ProductDetails() {
           )
         )}
       </main>
-      {toast && <div className="toast-success">{toast}</div>}
+      {/* Toasts handled globally by ToastProvider */}
       <Footer />
     </>
   );

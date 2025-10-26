@@ -124,6 +124,27 @@ export default function OrdersManager() {
     return orders.filter(order => order.status === status).length;
   };
 
+  const getAddressText = (order) => {
+    return (
+      order.customerInfo?.address || order.customer?.address || "غير معروف"
+    );
+  };
+
+  const getMapHref = (order) => {
+    const loc = order.location || order.customerInfo?.location || order.customer?.location;
+    if (loc?.lat && loc?.lng) return `https://www.google.com/maps?q=${loc.lat},${loc.lng}`;
+    // fallback: try to extract a maps link from address text
+    const txt = getAddressText(order);
+    const match = /(https?:\/\/[^\s]*maps[^\s]*)/i.exec(txt);
+    if (match) return match[1];
+    return null;
+  };
+
+  const getLocationLabel = (order) => {
+    const loc = order.location || order.customerInfo?.location || order.customer?.location;
+    return loc?.label || "";
+  };
+
   if (loading) return (
     <div className="admin-layout">
       <div className="loading-container">
@@ -274,9 +295,18 @@ export default function OrdersManager() {
                        "غير معروف"}
                     </td>
                     <td className="address-cell">
-                      {order.customerInfo?.address || 
-                       order.customer?.address || 
-                       "غير معروف"}
+                      {(() => {
+                        const href = getMapHref(order);
+                        const addr = getAddressText(order);
+                        const label = getLocationLabel(order);
+                        if (href) return (
+                          <a href={href} target="_blank" rel="noreferrer" title="فتح الموقع على الخريطة">
+                            <i className="fas fa-location-dot" style={{ color: '#0E84FF', marginInlineStart: '.25rem' }}></i>
+                            {label || addr}
+                          </a>
+                        );
+                        return addr;
+                      })()}
                     </td>
                     <td>{order.total} د.أ</td>
                     <td>
@@ -389,7 +419,21 @@ export default function OrdersManager() {
                   <div className="customer-info">
                     <p><strong>الاسم:</strong> {selectedOrder.customerInfo?.name}</p>
                     <p><strong>الهاتف:</strong> {selectedOrder.customerInfo?.phone}</p>
-                    <p><strong>العنوان:</strong> {selectedOrder.customerInfo?.address}</p>
+                    <p>
+                      <strong>العنوان:</strong>{' '}
+                      {(() => {
+                        const href = getMapHref(selectedOrder);
+                        const addr = getAddressText(selectedOrder);
+                        const label = getLocationLabel(selectedOrder);
+                        if (href) return (
+                          <a href={href} target="_blank" rel="noreferrer" title="فتح الموقع على الخريطة">
+                            <i className="fas fa-location-dot" style={{ color: '#0E84FF', marginInlineStart: '.25rem' }}></i>
+                            {label || addr}
+                          </a>
+                        );
+                        return addr;
+                      })()}
+                    </p>
                     <p><strong>طريقة الدفع:</strong> {selectedOrder.paymentMethod === 'cash' ? 'نقدي' : 
                                                      selectedOrder.paymentMethod === 'bank' ? 'تحويل بنكي' : 
                                                      selectedOrder.paymentMethod === 'cod' ? 'الدفع عند الاستلام' : 

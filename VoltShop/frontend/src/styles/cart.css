@@ -129,12 +129,16 @@
 }
 
 .quantity-controls input {
-  width: 50px;
+  width: 56px;
   text-align: center;
-  border: none;
-  background: transparent;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.5rem;
   font-weight: 600;
+  font-size: 0.95rem;
   color: #111827;
+  -webkit-text-fill-color: #111827; /* ensure visibility on WebKit */
 }
 
 .remove-btn {

@@ -4,32 +4,12 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import CartItem from "../components/CartItem";
 import "../styles/cart.css";
+import { useCart } from "../context/CartContext.jsx";
 
 export default function Cart() {
-  const [cart, setCart] = useState([]);
+  const { items, updateQty, removeItem, subtotal, shipping, total, FREE_SHIPPING_THRESHOLD } = useCart();
 
-  useEffect(() => {
-    setCart(JSON.parse(localStorage.getItem("cart") || "[]"));
-  }, []);
-
-  const remove = (id) => {
-    const updated = cart.filter(i => i.id !== id);
-    setCart(updated);
-    localStorage.setItem("cart", JSON.stringify(updated));
-  };
-
-  const changeQty = (id, qty) => {
-    if (qty < 1) return;
-    const updated = cart.map(i => i.id === id ? { ...i, quantity: qty } : i);
-    setCart(updated);
-    localStorage.setItem("cart", JSON.stringify(updated));
-  };
-
-  const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
-  const delivery = cart.length ? 2 : 0;
-  const total = subtotal + delivery;
-
-  if (cart.length === 0) {
+  if (items.length === 0) {
     return (
       <>
         <Navbar />
@@ -59,8 +39,8 @@ export default function Cart() {
         <h2>سلة المشتريات</h2>
         
         <div className="cart-items">
-          {cart.map(it => (
-            <CartItem key={it.id} item={it} onRemove={remove} onChangeQty={changeQty} />
+          {items.map(it => (
+            <CartItem key={it.id} item={it} onRemove={removeItem} onChangeQty={updateQty} />
           ))}
         </div>
         
@@ -68,16 +48,21 @@ export default function Cart() {
           <h3>ملخص الطلب</h3>
           <div className="summary-row">
             <span className="summary-label">مجموع المنتجات:</span>
-            <span className="summary-value">{subtotal} د.أ</span>
+            <span className="summary-value">{subtotal.toFixed(2)} د.أ</span>
           </div>
           <div className="summary-row">
             <span className="summary-label">رسوم التوصيل:</span>
-            <span className="summary-value">{delivery} د.أ</span>
+            <span className="summary-value">{shipping === 0 ? `مجاني (فوق ${FREE_SHIPPING_THRESHOLD} د.أ)` : `${shipping.toFixed(2)} د.أ`}</span>
           </div>
           <div className="summary-row">
             <span className="summary-label">المجموع النهائي:</span>
-            <span className="summary-value">{total} د.أ</span>
+            <span className="summary-value">{total.toFixed(2)} د.أ</span>
           </div>
+          {subtotal < FREE_SHIPPING_THRESHOLD && (
+            <div className="info" style={{ marginTop: '.5rem' }}>
+              أضف { (FREE_SHIPPING_THRESHOLD - subtotal).toFixed(2) } د.أ لتحصل على الشحن المجاني
+            </div>
+          )}
           <Link to="/checkout">
             <button className="checkout-btn">
               <i className="fas fa-credit-card"></i>

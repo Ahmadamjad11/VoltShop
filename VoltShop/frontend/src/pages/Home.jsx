@@ -6,6 +6,8 @@ import Footer from "../components/Footer";
 import API from "../api/api";
 import "../styles/home.css";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useCart } from "../context/CartContext.jsx";
+import { useToast } from "../context/ToastContext.jsx";
 
 export default function Home() {
   const [products, setProducts] = useState([]);
@@ -16,7 +18,8 @@ export default function Home() {
   const [limit, setLimit] = useState(12);
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState("recent"); // recent | price_asc | price_desc
-  const [toast, setToast] = useState("");
+  const { addItem } = useCart();
+  const { showToast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -55,24 +58,8 @@ export default function Home() {
   };
 
   const addToCart = (product, quantity = 1) => {
-    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-    const existing = cart.find(c => c.id === (product._id || product.id));
-    if (existing) {
-      existing.quantity += quantity;
-    } else {
-      cart.push({
-        id: product._id || product.id,
-        name: product.name,
-        price: product.price,
-        image: product.image,
-        warranty: product.warranty,
-        quantity
-      });
-    }
-    localStorage.setItem("cart", JSON.stringify(cart));
-    // Toast
-    setToast('تمت الإضافة للسلة بنجاح!');
-    setTimeout(() => setToast(""), 2500);
+    addItem(product, quantity);
+    showToast('تمت الإضافة للسلة بنجاح!');
   };
 
   const baseFiltered = cat ? products.filter(p => p.category === cat) : products;
@@ -204,9 +191,7 @@ export default function Home() {
         )}
       </main>
 
-      {toast && (
-        <div className="toast-success">{toast}</div>
-      )}
+      {/* Toasts handled globally by ToastProvider */}
 
       {/* Pagination */}
       <div className="container" style={{ display: 'flex', justifyContent: 'center', padding: '1rem 1.5rem 2rem' }}>

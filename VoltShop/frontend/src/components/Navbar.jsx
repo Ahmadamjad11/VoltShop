@@ -2,35 +2,21 @@ import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../styles/navbar.css";
+import { useCart } from "../context/CartContext.jsx";
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [cartCount, setCartCount] = useState(0);
+  const { totalCount: cartCount, subtotal, FREE_SHIPPING_THRESHOLD } = useCart();
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
 
   // تحديث عدد العناصر في السلة
   useEffect(() => {
-    const updateCartCount = () => {
-      const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-      const count = cart.reduce((total, item) => total + item.quantity, 0);
-      setCartCount(count);
-    };
-
-    updateCartCount();
-    
-    // الاستماع لتغييرات السلة
-    window.addEventListener('storage', updateCartCount);
-    
-    // تحديث كل ثانية للتأكد
-    const interval = setInterval(updateCartCount, 1000);
-
-    return () => {
-      window.removeEventListener('storage', updateCartCount);
-      clearInterval(interval);
-    };
+    const handleScroll = () => setIsScrolled(window.scrollY > 50);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   // Sync search box with URL ?q=
@@ -73,23 +59,10 @@ export default function Navbar() {
   // إغلاق القائمة عند تغيير حجم النافذة
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth > 768) {
-        setIsMenuOpen(false);
-      }
+      if (window.innerWidth > 768) setIsMenuOpen(false);
     };
-
-    // تتبع التمرير لتغيير مظهر الشريط
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-
     window.addEventListener("resize", handleResize);
-    window.addEventListener("scroll", handleScroll);
-    
-    return () => {
-      window.removeEventListener("resize", handleResize);
-      window.removeEventListener("scroll", handleScroll);
-    };
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   const toggleMenu = () => {
@@ -104,6 +77,11 @@ export default function Navbar() {
             <i className="fas fa-bolt"></i> VoltShop
           </Link>
         </div>
+        {subtotal < FREE_SHIPPING_THRESHOLD && (
+          <div className="free-ship-hint" style={{ position: 'absolute', left: '1rem', top: '100%', marginTop: '.25rem', fontSize: '.8rem', color: '#6b7280', whiteSpace: 'nowrap' }}>
+            تبقّى { (FREE_SHIPPING_THRESHOLD - subtotal).toFixed(2) } د.أ للشحن المجاني
+          </div>
+        )}
         
         <div className={`navbar-right ${isMenuOpen ? 'active' : ''}`}>
           <form className="navbar-search" onSubmit={onSearchSubmit} role="search">
@@ -121,7 +99,7 @@ export default function Navbar() {
           </Link>
           <Link to="/cart" onClick={() => setIsMenuOpen(false)}>
             <i className="fas fa-shopping-cart"></i> سلة
-            {cartCount > 0 && <span className="cart-count">{cartCount}</span>}
+            <span className={`cart-count${cartCount === 0 ? ' muted' : ''}`}>{cartCount}</span>
           </Link>
           <Link to="/services" onClick={() => setIsMenuOpen(false)}>
             <i className="fas fa-tools"></i> التركيبات والصيانة
