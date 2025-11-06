@@ -14,7 +14,6 @@ export default function Contact() {
   });
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  // 💡 حالة جديدة لحفظ بيانات الرسالة التي تم إرسالها بنجاح (للعرض في صفحة النجاح)
   const [sentData, setSentData] = useState(null);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({
@@ -35,20 +34,20 @@ export default function Contact() {
     let isValid = true;
 
     // Validate name (must be two words)
-    if (!form.name.trim().includes(' ') || form.name.trim().split(' ').length < 2) {
+    if (!form.name.trim() || form.name.trim().split(' ').length < 2) {
       errors.name = 'الرجاء إدخال الاسم الكامل (الاسم الأول واسم العائلة)';
       isValid = false;
     } else {
       errors.name = '';
     }
 
-    // Validate phone number (must be exactly 10 digits and start with 079)
-    const phoneRegex = /^079\d{7}$/;
+    // Validate phone number (10 digits starting with 07)
+    const phoneRegex = /^07\d{8}$/;
     if (!form.phone) {
       errors.phone = 'يرجى إدخال رقم الهاتف';
       isValid = false;
     } else if (!phoneRegex.test(form.phone)) {
-      errors.phone = 'رقم الهاتف يجب أن يتكون من 10 أرقام ويبدأ بـ 079';
+      errors.phone = 'رقم الهاتف يجب أن يبدأ بـ 07 ويكون 10 أرقام';
       isValid = false;
     } else {
       errors.phone = '';
@@ -60,35 +59,23 @@ export default function Contact() {
 
   const submit = async (e) => {
     e.preventDefault();
-    
-    // Validate form before submission
+
     if (!validateForm()) {
-      return;
+      return; // stop submission if validation fails
     }
 
     setLoading(true);
     setError("");
 
     try {
-      // 💡 تحسين: لا حاجة لإضافة timestamp و status هنا، دع الباك إند يقوم بذلك.
-      const contactData = {
-        ...form,
-      };
-
-      // إرسال الرسالة إلى الباك إند
-      // 💡 تحسين: استخدم الرد من الخادم إذا كان يحتوي على البيانات الكاملة (بما في ذلك الـ ID)
+      const contactData = { ...form };
       const response = await API.post("/contacts", contactData);
 
-      // 💡 حل الخطأ: حفظ البيانات المرسلة (أو البيانات المستلمة من الرد) قبل مسح النموذج.
       setSentData(response.data.data || contactData);
-
       setSubmitted(true);
-      // مسح النموذج بعد الحفظ
       setForm({ name: "", email: "", phone: "", subject: "", message: "" });
 
-      // 💡 تحسين: إزالة محاكاة الإرسال (setTimeout) لأن API.post هو عملية غير متزامنة بالفعل.
-      
-      // رسالة نجاح منبثقة
+      // success popup
       const message = document.createElement("div");
       message.className = "success-message";
       message.textContent = "تم إرسال رسالتك بنجاح! سنتواصل معك قريباً.";
@@ -106,7 +93,6 @@ export default function Contact() {
       }, 3000);
     } catch (err) {
       console.error(err);
-      // 💡 تحسين: محاولة استخلاص رسالة الخطأ من الخادم إن وجدت
       const errorMessage =
         err.response?.data?.message ||
         "حدث خطأ أثناء إرسال الرسالة. يرجى المحاولة مرة أخرى.";
@@ -129,7 +115,6 @@ export default function Contact() {
               <h1>شكراً لتواصلك معنا!</h1>
               <p>تم استلام رسالتك بنجاح، وسنتواصل معك في أقرب وقت ممكن.</p>
               <div className="success-details">
-                {/* 💡 حل الخطأ: استخدام sentData بدلاً من form */}
                 <p>
                   <strong>رقم الرسالة:</strong> #
                   {sentData?._id || Date.now().toString().slice(-6)}
@@ -142,14 +127,14 @@ export default function Contact() {
                 </p>
                 <p>
                   <strong>وقت الإرسال:</strong>{" "}
-                  {new Date().toLocaleString("ar-SA")}
+                  {new Date().toLocaleString("ar-EG")}
                 </p>
               </div>
               <div className="success-actions">
                 <button
                   onClick={() => {
                     setSubmitted(false);
-                    setSentData(null); // مسح البيانات المرسلة عند العودة
+                    setSentData(null);
                   }}
                   className="btn-primary"
                 >
@@ -172,7 +157,6 @@ export default function Contact() {
     );
   }
 
-  // ... (بقية كود العرض للنموذج العادي)
   return (
     <>
       <Navbar />
@@ -200,14 +184,12 @@ export default function Contact() {
 
         <div className="contact-container">
           <div className="contact-content">
+            {/* معلومات التواصل */}
             <div className="contact-info">
               <h2>معلومات التواصل</h2>
-
               <div className="contact-methods">
                 <div className="contact-method">
-                  <div className="method-icon">
-                    <i className="fas fa-phone"></i>
-                  </div>
+                  <div className="method-icon"><i className="fas fa-phone"></i></div>
                   <div className="method-content">
                     <h3>اتصل بنا</h3>
                     <p>+962797812733</p>
@@ -215,34 +197,25 @@ export default function Contact() {
                     <small>متاح من 8 صباحاً إلى 8 مساءً</small>
                   </div>
                 </div>
-
                 <div className="contact-method">
-                  <div className="method-icon">
-                    <i className="fas fa-envelope"></i>
-                  </div>
+                  <div className="method-icon"><i className="fas fa-envelope"></i></div>
                   <div className="method-content">
                     <h3>راسلنا</h3>
                     <p>vvoltshop2025@gmail.com</p>
                     <p>ahmadtoubeh45@gmail.com</p>
-                    <small>نرد خلال اقل من  ساعة</small>
+                    <small>نرد خلال أقل من ساعة</small>
                   </div>
                 </div>
-
                 <div className="contact-method">
-                  <div className="method-icon">
-                    <i className="fas fa-map-marker-alt"></i>
-                  </div>
+                  <div className="method-icon"><i className="fas fa-map-marker-alt"></i></div>
                   <div className="method-content">
                     <h3>زيارتنا</h3>
                     <p>حي نزال</p>
                     <small>من السبت إلى الخميس</small>
                   </div>
                 </div>
-
                 <div className="contact-method">
-                  <div className="method-icon">
-                    <i className="fas fa-clock"></i>
-                  </div>
+                  <div className="method-icon"><i className="fas fa-clock"></i></div>
                   <div className="method-content">
                     <h3>ساعات العمل</h3>
                     <p>السبت - الخميس: 8:00 ص - 8:00 م</p>
@@ -251,12 +224,13 @@ export default function Contact() {
                 </div>
               </div>
 
+              {/* الأسئلة الشائعة */}
               <div className="faq-section">
                 <h3>الأسئلة الشائعة</h3>
                 <div className="faq-list">
                   <div className="faq-item">
                     <h4>كم يستغرق التسليم؟</h4>
-                    <p> التسليم خلال اقل من ساعة خلال أيام العمل . </p>
+                    <p>التسليم خلال أقل من ساعة خلال أيام العمل.</p>
                   </div>
                   <div className="faq-item">
                     <h4>هل تقدمون خدمة التركيب؟</h4>
@@ -264,15 +238,13 @@ export default function Contact() {
                   </div>
                   <div className="faq-item">
                     <h4>ما هي سياسة الاسترداد؟</h4>
-                    <p>
-                      يمكن استرداد المنتجات خلال 14 يوماً من الشراء بشرط عدم
-                      الاستخدام.
-                    </p>
+                    <p>يمكن استرداد المنتجات خلال 14 يوماً من الشراء بشرط عدم الاستخدام.</p>
                   </div>
                 </div>
               </div>
             </div>
 
+            {/* الفورم */}
             <div className="contact-form-container">
               <div className="form-header">
                 <h2>أرسل لنا رسالة</h2>
@@ -326,16 +298,18 @@ export default function Contact() {
                   <div className="form-group">
                     <label>
                       <i className="fas fa-phone"></i>
-                      رقم الهاتف
+                      رقم الهاتف *
                     </label>
                     <input
                       type="tel"
                       name="phone"
                       value={form.phone}
                       onChange={handleChange}
+                      className={fieldErrors.phone ? 'error-input' : ''}
                       placeholder="أدخل رقم هاتفك"
                       disabled={loading}
                     />
+                    {fieldErrors.phone && <div className="error-message">{fieldErrors.phone}</div>}
                   </div>
                   <div className="form-group">
                     <label>
@@ -376,20 +350,14 @@ export default function Contact() {
                   ></textarea>
                 </div>
 
-                <button
-                  type="submit"
-                  className="submit-button"
-                  disabled={loading}
-                >
+                <button type="submit" className="submit-button" disabled={loading}>
                   {loading ? (
                     <>
-                      <i className="fas fa-spinner fa-spin"></i>
-                      جاري الإرسال...
+                      <i className="fas fa-spinner fa-spin"></i> جاري الإرسال...
                     </>
                   ) : (
                     <>
-                      <i className="fas fa-paper-plane"></i>
-                      إرسال الرسالة
+                      <i className="fas fa-paper-plane"></i> إرسال الرسالة
                     </>
                   )}
                 </button>
