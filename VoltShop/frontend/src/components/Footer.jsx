@@ -34,21 +34,14 @@ export default function Footer() {
           <div className="footer-contact">
             <h4>تواصل</h4>
             <ul>
-              <li><i className="fas fa-phone"></i><span>079-1234567</span></li>
-              <li><i className="fas fa-envelope"></i><span>info@voltshop.com</span></li>
+              <li><i className="fas fa-phone"></i><span>0797812733</span></li>
+              <li><i className="fas fa-envelope"></i><span>vvoltshop2025@gmail.com</span></li>
               <li><i className="fas fa-location-dot"></i><span>عمّان، الأردن</span></li>
-              <li><i className="fas fa-clock"></i><span>من 9 صباحاً إلى 9 مساءً</span></li>
+              <li><i className="fas fa-clock"></i><span>من 9 صباحاً إلى 6 مساءً</span></li>
             </ul>
           </div>
 
-          <div className="footer-newsletter">
-            <h4>اشترك بالنشرة</h4>
-            <p>آخر العروض والتخفيضات مباشرة إلى بريدك</p>
-            <form className="newsletter-form" onSubmit={(e) => e.preventDefault()}>
-              <input type="email" placeholder="بريدك الإلكتروني" aria-label="البريد الإلكتروني" required />
-              <button type="submit" className="btn-primary">اشترك</button>
-            </form>
-          </div>
+        
         </div>
 
         <div className="footer-bottom">

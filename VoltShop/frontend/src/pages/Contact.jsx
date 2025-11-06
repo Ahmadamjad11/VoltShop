@@ -17,6 +17,10 @@ export default function Contact() {
   // 💡 حالة جديدة لحفظ بيانات الرسالة التي تم إرسالها بنجاح (للعرض في صفحة النجاح)
   const [sentData, setSentData] = useState(null);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({
+    name: "",
+    phone: ""
+  });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -26,8 +30,42 @@ export default function Contact() {
     });
   };
 
+  const validateForm = () => {
+    const errors = {};
+    let isValid = true;
+
+    // Validate name (must be two words)
+    if (!form.name.trim().includes(' ') || form.name.trim().split(' ').length < 2) {
+      errors.name = 'الرجاء إدخال الاسم الكامل (الاسم الأول واسم العائلة)';
+      isValid = false;
+    } else {
+      errors.name = '';
+    }
+
+    // Validate phone number (must be exactly 10 digits and start with 079)
+    const phoneRegex = /^079\d{7}$/;
+    if (!form.phone) {
+      errors.phone = 'يرجى إدخال رقم الهاتف';
+      isValid = false;
+    } else if (!phoneRegex.test(form.phone)) {
+      errors.phone = 'رقم الهاتف يجب أن يتكون من 10 أرقام ويبدأ بـ 079';
+      isValid = false;
+    } else {
+      errors.phone = '';
+    }
+
+    setFieldErrors(errors);
+    return isValid;
+  };
+
   const submit = async (e) => {
     e.preventDefault();
+    
+    // Validate form before submission
+    if (!validateForm()) {
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -172,9 +210,9 @@ export default function Contact() {
                   </div>
                   <div className="method-content">
                     <h3>اتصل بنا</h3>
-                    <p>+966 50 123 4567</p>
-                    <p>+966 11 234 5678</p>
-                    <small>متاح من 8 صباحاً إلى 10 مساءً</small>
+                    <p>+962797812733</p>
+                    <p>+962791021454</p>
+                    <small>متاح من 8 صباحاً إلى 8 مساءً</small>
                   </div>
                 </div>
 
@@ -184,9 +222,9 @@ export default function Contact() {
                   </div>
                   <div className="method-content">
                     <h3>راسلنا</h3>
-                    <p>info@voltshop.com</p>
-                    <p>support@voltshop.com</p>
-                    <small>نرد خلال 24 ساعة</small>
+                    <p>vvoltshop2025@gmail.com</p>
+                    <p>ahmadtoubeh45@gmail.com</p>
+                    <small>نرد خلال اقل من  ساعة</small>
                   </div>
                 </div>
 
@@ -196,8 +234,7 @@ export default function Contact() {
                   </div>
                   <div className="method-content">
                     <h3>زيارتنا</h3>
-                    <p>شارع الملك فهد، الرياض</p>
-                    <p>المملكة العربية السعودية</p>
+                    <p>حي نزال</p>
                     <small>من السبت إلى الخميس</small>
                   </div>
                 </div>
@@ -208,8 +245,7 @@ export default function Contact() {
                   </div>
                   <div className="method-content">
                     <h3>ساعات العمل</h3>
-                    <p>السبت - الخميس: 8:00 ص - 10:00 م</p>
-                    <p>الجمعة: 2:00 م - 10:00 م</p>
+                    <p>السبت - الخميس: 8:00 ص - 8:00 م</p>
                     <small>خدمة العملاء متاحة دائماً</small>
                   </div>
                 </div>
@@ -220,10 +256,7 @@ export default function Contact() {
                 <div className="faq-list">
                   <div className="faq-item">
                     <h4>كم يستغرق التسليم؟</h4>
-                    <p>
-                      التسليم خلال 2-3 أيام عمل داخل الرياض، و5-7 أيام للمدن
-                      الأخرى.
-                    </p>
+                    <p> التسليم خلال اقل من ساعة خلال أيام العمل . </p>
                   </div>
                   <div className="faq-item">
                     <h4>هل تقدمون خدمة التركيب؟</h4>
@@ -265,10 +298,12 @@ export default function Contact() {
                       name="name"
                       value={form.name}
                       onChange={handleChange}
-                      placeholder="أدخل اسمك الكامل"
+                      className={fieldErrors.name ? 'error-input' : ''}
+                      placeholder="الاسم الأول واسم العائلة"
                       required
                       disabled={loading}
                     />
+                    {fieldErrors.name && <div className="error-message">{fieldErrors.name}</div>}
                   </div>
                   <div className="form-group">
                     <label>
