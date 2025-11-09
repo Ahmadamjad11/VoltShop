@@ -4,10 +4,16 @@ import {
   getProductById,
   createProduct,
   updateProduct,
-  deleteProduct
+  deleteProduct,
+  getSubcategories,
+  getTypes
 } from '../controllers/productController.js';
 
 const router = express.Router();
+
+// Routes للحصول على Subcategories و Types (يجب أن تكون قبل /:id)
+router.get('/subcategories', getSubcategories);
+router.get('/types', getTypes);
 
 router.get('/', getProducts);
 router.get('/:id', getProductById);

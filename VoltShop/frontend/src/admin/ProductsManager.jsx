@@ -6,11 +6,16 @@ import "../styles/admin.css";
 export default function ProductsManager() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
+  const [types, setTypes] = useState([]);
   const [form, setForm] = useState({ 
     name: "", 
     price: "", 
+    description: "",
     image: "", 
     category: "", 
+    subcategory: "",
+    type: "",
     rating: "", 
     warranty: "",
     stock: ""
@@ -18,17 +23,47 @@ export default function ProductsManager() {
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  
+  // Filters
+  const [filterCategory, setFilterCategory] = useState("");
+  const [filterSubcategory, setFilterSubcategory] = useState("");
+  const [filterType, setFilterType] = useState("");
 
   useEffect(() => { 
     loadProducts(); 
     loadCategories(); 
   }, []);
 
+  // Load subcategories when category changes
+  useEffect(() => {
+    if (form.category) {
+      loadSubcategories(form.category);
+    } else {
+      setSubcategories([]);
+    }
+  }, [form.category]);
+
+  // Load types when subcategory changes
+  useEffect(() => {
+    if (form.category && form.subcategory) {
+      loadTypes(form.category, form.subcategory);
+    } else {
+      setTypes([]);
+    }
+  }, [form.category, form.subcategory]);
+
   const loadProducts = async () => {
     try {
       setLoading(true);
       const res = await API.get("/products");
-      setProducts(res.data);
+      // Handle both old format (array) and new format (object with products)
+      if (Array.isArray(res.data)) {
+        setProducts(res.data);
+      } else if (res.data && res.data.products) {
+        setProducts(res.data.products);
+      } else {
+        setProducts([]);
+      }
     } catch (err) {
       console.error(err);
       setProducts([]);
@@ -47,6 +82,26 @@ export default function ProductsManager() {
     }
   };
 
+  const loadSubcategories = async (category) => {
+    try {
+      const res = await API.get(`/products/subcategories?category=${encodeURIComponent(category)}`);
+      setSubcategories(res.data);
+    } catch (err) {
+      console.error(err);
+      setSubcategories([]);
+    }
+  };
+
+  const loadTypes = async (category, subcategory) => {
+    try {
+      const res = await API.get(`/products/types?category=${encodeURIComponent(category)}&subcategory=${encodeURIComponent(subcategory)}`);
+      setTypes(res.data);
+    } catch (err) {
+      console.error(err);
+      setTypes([]);
+    }
+  };
+
   const save = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -55,6 +110,8 @@ export default function ProductsManager() {
       const productData = {
         ...form,
         price: Number(form.price),
+        description: form.description || "",
+        type: form.type || "",
         rating: Number(form.rating) || 0,
         stock: Number(form.stock) || 0
       };
@@ -69,12 +126,17 @@ export default function ProductsManager() {
       setForm({ 
         name: "", 
         price: "", 
+        description: "",
         image: "", 
         category: "", 
+        subcategory: "",
+        type: "",
         rating: "", 
         warranty: "",
         stock: ""
       });
+      setSubcategories([]);
+      setTypes([]);
       loadProducts();
       
       // Show success message
@@ -112,12 +174,22 @@ export default function ProductsManager() {
     setForm({ 
       name: p.name, 
       price: p.price, 
+      description: p.description || "",
       image: p.image, 
-      category: p.category, 
+      category: p.category || "", 
+      subcategory: p.subcategory || "",
+      type: p.type || "",
       rating: p.rating || "", 
       warranty: p.warranty || "",
       stock: p.stock || ""
     });
+    // Load subcategories and types for editing
+    if (p.category) {
+      loadSubcategories(p.category);
+    }
+    if (p.category && p.subcategory) {
+      loadTypes(p.category, p.subcategory);
+    }
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -160,13 +232,26 @@ export default function ProductsManager() {
     setForm({ 
       name: "", 
       price: "", 
+      description: "",
       image: "", 
       category: "", 
+      subcategory: "",
+      type: "",
       rating: "", 
       warranty: "",
       stock: ""
     });
+    setSubcategories([]);
+    setTypes([]);
   };
+
+  // Filter products
+  const filteredProducts = products.filter(p => {
+    if (filterCategory && p.category !== filterCategory) return false;
+    if (filterSubcategory && p.subcategory !== filterSubcategory) return false;
+    if (filterType && p.type !== filterType) return false;
+    return true;
+  });
 
   return (
     <div className="admin-layout">
@@ -264,12 +349,31 @@ export default function ProductsManager() {
 
               <div className="form-group">
                 <label>
+                  <i className="fas fa-align-right"></i>
+                  الوصف
+                </label>
+                <textarea 
+                  placeholder="وصف المنتج (اختياري)" 
+                  value={form.description} 
+                  onChange={e => setForm({...form, description: e.target.value})} 
+                  rows="2"
+                  disabled={saving}
+                />
+              </div>
+            </div>
+
+            {/* هيكل الفئات الثلاثي */}
+            <div className="form-row">
+              <div className="form-group">
+                <label>
                   <i className="fas fa-tags"></i>
-                  الفئة
+                  الفئة الرئيسية *
                 </label>
                 <select 
                   value={form.category} 
-                  onChange={e => setForm({...form, category: e.target.value})}
+                  onChange={e => {
+                    setForm({...form, category: e.target.value, subcategory: "", type: ""});
+                  }}
                   required
                   disabled={saving}
                 >
@@ -277,6 +381,47 @@ export default function ProductsManager() {
                   {categories.map(c => (
                     <option key={c._id} value={c.name}>
                       {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>
+                  <i className="fas fa-tag"></i>
+                  الماركة / النوع *
+                </label>
+                <select 
+                  value={form.subcategory} 
+                  onChange={e => {
+                    setForm({...form, subcategory: e.target.value, type: ""});
+                  }}
+                  required
+                  disabled={saving || !form.category}
+                >
+                  <option value="">اختر الماركة</option>
+                  {subcategories.map((sub, index) => (
+                    <option key={index} value={sub}>
+                      {sub}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>
+                  <i className="fas fa-list"></i>
+                  نوع المنتج الدقيق
+                </label>
+                <select 
+                  value={form.type} 
+                  onChange={e => setForm({...form, type: e.target.value})}
+                  disabled={saving || !form.subcategory}
+                >
+                  <option value="">اختر النوع (اختياري)</option>
+                  {types.map((t, index) => (
+                    <option key={index} value={t}>
+                      {t}
                     </option>
                   ))}
                 </select>
@@ -360,16 +505,91 @@ export default function ProductsManager() {
           </form>
         </div>
 
+        {/* Filters Section */}
+        <div className="filters-section" style={{ marginBottom: "2rem", padding: "1.5rem", background: "#f9fafb", borderRadius: "0.5rem" }}>
+          <h3 style={{ marginBottom: "1rem" }}>فلترة المنتجات</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
+            <div>
+              <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "600" }}>الفئة:</label>
+              <select 
+                value={filterCategory} 
+                onChange={e => {
+                  setFilterCategory(e.target.value);
+                  setFilterSubcategory("");
+                  setFilterType("");
+                }}
+                style={{ width: "100%", padding: "0.5rem", borderRadius: "0.25rem", border: "1px solid #ddd" }}
+              >
+                <option value="">الكل</option>
+                {categories.map(c => (
+                  <option key={c._id} value={c.name}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "600" }}>الماركة:</label>
+              <select 
+                value={filterSubcategory} 
+                onChange={e => {
+                  setFilterSubcategory(e.target.value);
+                  setFilterType("");
+                }}
+                disabled={!filterCategory}
+                style={{ width: "100%", padding: "0.5rem", borderRadius: "0.25rem", border: "1px solid #ddd" }}
+              >
+                <option value="">الكل</option>
+                {products
+                  .filter(p => !filterCategory || p.category === filterCategory)
+                  .map(p => p.subcategory)
+                  .filter((v, i, a) => a.indexOf(v) === i && v)
+                  .map((sub, index) => (
+                    <option key={index} value={sub}>{sub}</option>
+                  ))}
+              </select>
+            </div>
+            <div>
+              <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "600" }}>النوع:</label>
+              <select 
+                value={filterType} 
+                onChange={e => setFilterType(e.target.value)}
+                disabled={!filterSubcategory}
+                style={{ width: "100%", padding: "0.5rem", borderRadius: "0.25rem", border: "1px solid #ddd" }}
+              >
+                <option value="">الكل</option>
+                {products
+                  .filter(p => (!filterCategory || p.category === filterCategory) && (!filterSubcategory || p.subcategory === filterSubcategory))
+                  .map(p => p.type)
+                  .filter((v, i, a) => a.indexOf(v) === i && v && v.trim())
+                  .map((type, index) => (
+                    <option key={index} value={type}>{type}</option>
+                  ))}
+              </select>
+            </div>
+            <div style={{ display: "flex", alignItems: "flex-end" }}>
+              <button 
+                onClick={() => {
+                  setFilterCategory("");
+                  setFilterSubcategory("");
+                  setFilterType("");
+                }}
+                style={{ padding: "0.5rem 1rem", background: "#ef4444", color: "white", border: "none", borderRadius: "0.25rem", cursor: "pointer" }}
+              >
+                <i className="fas fa-times"></i> إعادة تعيين
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* جدول المنتجات */}
         <div className="table-section">
-          <h2>قائمة المنتجات ({products.length})</h2>
+          <h2>قائمة المنتجات ({filteredProducts.length})</h2>
           
           {loading ? (
             <div className="loading-container">
               <div className="loading-spinner"></div>
               <p>جاري تحميل المنتجات...</p>
             </div>
-          ) : products.length === 0 ? (
+          ) : filteredProducts.length === 0 ? (
             <div className="empty-state">
               <i className="fas fa-box-open"></i>
               <p>لا توجد منتجات لعرضها</p>
@@ -385,13 +605,15 @@ export default function ProductsManager() {
                     <th>الاسم</th>
                     <th>السعر</th>
                     <th>الفئة</th>
+                    <th>الماركة</th>
+                    <th>النوع</th>
                     <th>التقييم</th>
                     <th>المخزون</th>
                     <th>الإجراءات</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {products.map((p, i) => ( 
+                  {filteredProducts.map((p, i) => ( 
                     <tr key={p._id || p.id}>
                       <td>{i + 1}</td>
                       <td>
@@ -414,6 +636,12 @@ export default function ProductsManager() {
                       </td>
                       <td>
                         <span className="category-badge">{p.category || "-"}</span>
+                      </td>
+                      <td>
+                        <span className="category-badge" style={{ background: "#dbeafe" }}>{p.subcategory || "-"}</span>
+                      </td>
+                      <td>
+                        <span className="category-badge" style={{ background: "#f3f4f6" }}>{p.type || "-"}</span>
                       </td>
                       <td>
                         <div className="rating">

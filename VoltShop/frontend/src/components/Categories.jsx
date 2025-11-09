@@ -30,11 +30,8 @@ export default function Categories({ onSelect }) {
   };
 
   const goToCategory = (cat) => {
-    if (onSelect) {
-      onSelect(cat);
-    } else {
-      navigate(`/category/${cat}`);
-    }
+    // التوجيه إلى صفحة Subcategories بدلاً من CategoryPage
+    navigate(`/subcategories/${encodeURIComponent(cat)}`);
   };
 
   if (loading) {

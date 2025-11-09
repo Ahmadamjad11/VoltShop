@@ -9,6 +9,7 @@ import productRoutes from './routes/products.js';
 import orderRoutes from './routes/orders.js';
 import adminRoutes from './routes/admin.js';
 import categoryRoutes from "./routes/categories.js";
+import subcategoryRoutes from "./routes/subcategories.js";
 import serviceRoutes from './routes/services.js';
 import contactRoutes from './routes/contacts.js';
 
@@ -31,6 +32,7 @@ app.use('/api/products', productRoutes);  // إدارة المنتجات
 app.use('/api/orders', orderRoutes);      // إدارة الطلبات
 app.use('/api/admin', adminRoutes);       // إدارة لوحة الأدمن
 app.use("/api/categories", categoryRoutes);
+app.use("/api/subcategories", subcategoryRoutes);  // إدارة الماركات
 app.use('/api/services', serviceRoutes);  // إدارة طلبات الخدمات
 app.use('/api/contacts', contactRoutes);  // إدارة رسائل التواصل
 // Route اختبارية للتأكد أن السيرفر يعمل

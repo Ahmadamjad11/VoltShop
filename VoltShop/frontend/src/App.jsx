@@ -7,6 +7,8 @@ import Checkout from "./pages/Checkout";
 import Services from "./pages/Services";
 import Contact from "./pages/Contact";
 import CategoryPage from "./pages/CategoryPage";
+import Subcategories from "./pages/Subcategories";
+import Products from "./pages/Products";
 import CategoriesManager from "./admin/CategoriesManager";
 import AdminLogin from "./admin/AdminLogin.jsx";
 
@@ -37,6 +39,9 @@ export default function App() {
       <Route path="/services" element={<Services />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/category/:cat" element={<CategoryPage />} />
+      <Route path="/subcategories/:category" element={<Subcategories />} />
+      <Route path="/products" element={<Products />} />
+      <Route path="/products/*" element={<Products />} />
       
       {/* Admin */}
       <Route path="/admin/login" element={<AdminLogin />} />
