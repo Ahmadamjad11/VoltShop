@@ -48,7 +48,7 @@ export default function Subcategories() {
   };
 
   const handleBack = () => {
-    navigate("/");
+    navigate(-1); // العودة إلى الصفحة السابقة (CategoryPage)
   };
 
   if (loading) {
@@ -117,7 +117,7 @@ export default function Subcategories() {
                 const subImage = typeof sub === 'object' && sub.image ? sub.image : null;
                 const cleanCategory = category.trim();
                 const cleanSubcategory = subName.trim();
-                const productsUrl = `/products?cat=${encodeURIComponent(cleanCategory)}&sub=${encodeURIComponent(cleanSubcategory)}`;
+                const productsUrl = `/products/${encodeURIComponent(cleanCategory)}/${encodeURIComponent(cleanSubcategory)}`;
                 
                 return (
                   <Link

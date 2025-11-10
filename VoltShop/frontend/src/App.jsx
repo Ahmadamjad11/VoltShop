@@ -41,7 +41,7 @@ export default function App() {
       <Route path="/category/:cat" element={<CategoryPage />} />
       <Route path="/subcategories/:category" element={<Subcategories />} />
       <Route path="/products" element={<Products />} />
-      <Route path="/products/*" element={<Products />} />
+      <Route path="/products/:cat/:sub" element={<Products />} />
       
       {/* Admin */}
       <Route path="/admin/login" element={<AdminLogin />} />

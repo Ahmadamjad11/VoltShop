@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import ProductCard from "../components/ProductCard";
@@ -10,13 +10,14 @@ import "../styles/products.css";
 
 export default function Products() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { cat, sub } = useParams();
   const navigate = useNavigate();
   const { addItem } = useCart();
   const { showToast } = useToast();
 
   // URL params
-  const category = searchParams.get("cat") || "";
-  const subcategory = searchParams.get("sub") || "";
+  const category = cat || "";
+  const subcategory = sub || "";
   const typeParam = searchParams.get("type") || "";
   const searchQuery = searchParams.get("search") || "";
   const pageParam = parseInt(searchParams.get("page") || "1", 10);
