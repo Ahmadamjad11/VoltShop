@@ -42,9 +42,9 @@ export default function ProductDetails() {
   return (
     <>
       <Navbar />
-      <main className="container" style={{ padding: "2rem 1.5rem" }}>
+      <main className="container" style={{ padding: "1.5rem 1rem" }}>
         {loading ? (
-          <div className="skeleton-card" style={{ maxWidth: 900, margin: "0 auto" }}>
+          <div className="skeleton-card" style={{ maxWidth: '100%', margin: '0 auto' }}>
             <div className="sk-image" style={{ height: 260 }}></div>
             <div className="sk-title"></div>
             <div className="sk-price"></div>
@@ -55,8 +55,17 @@ export default function ProductDetails() {
           </div>
         ) : (
           product && (
-            <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "2rem", alignItems: "start" }}>
-              <div className="card" style={{ padding: "1rem" }}>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr',
+              gap: '1.5rem',
+              alignItems: 'start',
+              '@media (min-width: 768px)': {
+                gridTemplateColumns: '1.2fr 1fr',
+                gap: '2rem'
+              }
+            }}>
+              <div className="card" style={{ padding: '0.75rem', maxWidth: '100%' }}>
                 <img
                   src={product.image || "/placeholder.png"}
                   alt={product.name}
@@ -74,16 +83,59 @@ export default function ProductDetails() {
                 {product.warranty && (
                   <div className="warranty" style={{ marginBottom: "1rem" }}>الكفالة: {product.warranty}</div>
                 )}
-                <div style={{ display: "flex", alignItems: "center", gap: ".75rem", marginBottom: "1rem" }}>
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.75rem',
+                  marginBottom: '1rem',
+                  '@media (min-width: 640px)': {
+                    flexDirection: 'row',
+                    alignItems: 'center'
+                  }
+                }}>
                   <label style={{ display: "flex", alignItems: "center", gap: ".5rem" }}>
                     <span>الكمية:</span>
-                    <input type="number" min={1} value={qty} onChange={(e) => setQty(Math.max(1, parseInt(e.target.value||"1",10)))} style={{ width: 90 }} />
+                    <input 
+                      type="number" 
+                      min={1} 
+                      value={qty} 
+                      onChange={(e) => setQty(Math.max(1, parseInt(e.target.value||"1",10)))} 
+                      style={{ 
+                        width: '100%',
+                        maxWidth: '90px',
+                        padding: '0.5rem',
+                        borderRadius: '0.375rem',
+                        border: '1px solid #d1d5db'
+                      }} 
+                    />
                   </label>
-                  <button className="btn-primary" onClick={addToCart}><i className="fas fa-cart-plus"></i> أضف للسلة</button>
-                  <button className="btn-outline" onClick={() => navigate(-1)}><i className="fas fa-arrow-right"></i> رجوع</button>
+                  <button 
+                    className="btn-primary" 
+                    onClick={addToCart}
+                    style={{
+                      width: '100%',
+                      '@media (min-width: 640px)': {
+                        width: 'auto'
+                      }
+                    }}
+                  >
+                    <i className="fas fa-cart-plus"></i> أضف للسلة
+                  </button>
+                  <button 
+                    className="btn-outline" 
+                    onClick={() => navigate(-1)}
+                    style={{
+                      width: '100%',
+                      '@media (min-width: 640px)': {
+                        width: 'auto'
+                      }
+                    }}
+                  >
+                    <i className="fas fa-arrow-right"></i> رجوع
+                  </button>
                 </div>
                 {product.features && Array.isArray(product.features) && product.features.length > 0 && (
-                  <div className="card" style={{ padding: "1rem", marginTop: "1rem" }}>
+                  <div className="card" style={{ padding: '1rem', marginTop: '1rem', width: '100%' }}>
                     <h3 style={{ marginBottom: ".75rem" }}>المواصفات</h3>
                     <ul style={{ margin: 0, paddingInlineStart: "1.25rem" }}>
                       {product.features.map((f, idx) => (
