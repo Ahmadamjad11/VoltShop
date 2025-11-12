@@ -15,7 +15,12 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background-color: #ffffff;
+  /* خلفية الشعار مع طبقة شفافة ناعمة */
+  background-image: linear-gradient(rgba(255,255,255,0.29), rgba(255,255,255,0.29)), url('/images/voltshop-bg.jpg');
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
   color: #111827;
   direction: rtl;
   font-family: 'Tajawal', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
