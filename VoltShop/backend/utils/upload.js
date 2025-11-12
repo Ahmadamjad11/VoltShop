@@ -1,61 +1,43 @@
+import { v2 as cloudinary } from 'cloudinary';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import multer from 'multer';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// التأكد من وجود مجلد uploads
-const uploadsDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-  console.log('✅ Created uploads directory');
+// التحقق من أن متغيرات البيئة الخاصة بـ Cloudinary موجودة
+if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+  console.error("CRITICAL ERROR: Cloudinary environment variables are not set. Please check your .env file.");
+  // إيقاف التطبيق إذا كانت الإعدادات الأساسية مفقودة لمنع أخطاء غير متوقعة
+  process.exit(1); 
 }
 
-// إعداد التخزين
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadsDir);
-  },
-  filename: (req, file, cb) => {
-    // إنشاء اسم فريد للملف: timestamp + random number + extension
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'product-' + uniqueSuffix + path.extname(file.originalname));
-  }
+// ضبط إعدادات Cloudinary باستخدام متغيرات البيئة التي أضفتها في ملف .env
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// فلترة الملفات - قبول الصور فقط
-const fileFilter = (req, file, cb) => {
-  // إذا لم يكن هناك ملف، السماح بذلك (optional file)
-  if (!file) {
-    return cb(null, true);
-  }
-  
-  const allowedTypes = /jpeg|jpg|png|gif|webp/;
-  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = allowedTypes.test(file.mimetype);
+// إعداد مساحة التخزين على Cloudinary
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'voltshop-products', // اسم المجلد الذي سيتم إنشاؤه في حسابك على Cloudinary لتنظيم الصور
+    allowed_formats: ['jpeg', 'png', 'jpg'], // الصيغ المسموح بها للصور فقط
+    transformation: [{ width: 800, height: 800, crop: 'limit' }] // لتحديد حجم أقصى للصور وتوفير المساحة
+  },
+});
 
-  if (mimetype && extname) {
-    return cb(null, true);
-  } else {
-    cb(new Error('يجب أن يكون الملف صورة (jpeg, jpg, png, gif, webp)'));
-  }
-};
-
-// إعداد multer - السماح بعدم وجود ملف (optional)
-// ملاحظة: multer يملأ req.body تلقائياً عند معالجة multipart/form-data
-const upload = multer({
+// إعداد Multer لاستخدام تخزين Cloudinary بدلاً من التخزين المحلي
+const upload = multer({ 
   storage: storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB
-  },
-  fileFilter: fileFilter
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB حد أقصى لحجم الملف
+  fileFilter: (req, file, cb) => {
+    // فلتر للتأكد من أن الملف المرفوع هو صورة
+    if (file.mimetype.startsWith('image')) {
+      cb(null, true);
+    } else {
+      cb(new Error('الملف ليس صورة! يرجى رفع صورة فقط.'), false);
+    }
+  }
 });
-
-// Export both single (required) and optional single (for when file might not exist)
-export const uploadSingle = upload.single('image');
-export const uploadOptional = upload.single('image'); // Same, but we'll handle it in controller
 
 export default upload;
-
