@@ -9,6 +9,8 @@ export default function ProductForm({ onAdded, product = null }) {
   const [subcategory, setSubcategory] = useState("");
   const [type, setType] = useState("");
   const [image, setImage] = useState("");
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState("");
   const [rating, setRating] = useState("");
   const [warranty, setWarranty] = useState("");
   const [stock, setStock] = useState("");
@@ -53,11 +55,28 @@ export default function ProductForm({ onAdded, product = null }) {
       setSubcategory(product.subcategory || "");
       setType(product.type || "");
       setImage(product.image || "");
+      setImagePreview(product.image || "");
+      setImageFile(null);
       setRating(product.rating || "");
       setWarranty(product.warranty || "");
       setStock(product.stock || "");
     }
   }, [product]);
+
+  // معالج اختيار ملف الصورة
+  const handleImageFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      setImage(""); // مسح رابط الصورة عند اختيار ملف
+      // إنشاء معاينة للصورة
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const loadCategories = async () => {
     try {
@@ -98,29 +117,81 @@ export default function ProductForm({ onAdded, product = null }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // التحقق من وجود رابط صورة أو ملف صورة
+    if (!image && !imageFile) {
+      alert("يرجى إدخال رابط الصورة أو اختيار صورة من الجهاز");
+      return;
+    }
+
     try {
-      const productData = {
-        name,
-        price: Number(price),
-        description,
-        category,
-        subcategory,
-        type: type || "",
-        image,
-        rating: rating ? Number(rating) : 0,
-        warranty: warranty || "",
-        stock: stock ? Number(stock) : 0
-      };
+      // استخدام localhost للتطوير المحلي
+      const baseURL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+      console.log("🌐 Using API URL:", baseURL);
+      
+      // إذا كان هناك ملف صورة، استخدم FormData
+      if (imageFile) {
+        const formData = new FormData();
+        formData.append("name", name);
+        formData.append("price", Number(price));
+        formData.append("description", description);
+        formData.append("category", category);
+        formData.append("subcategory", subcategory);
+        formData.append("type", type || "");
+        formData.append("image", imageFile);
+        formData.append("rating", rating ? Number(rating) : 0);
+        formData.append("warranty", warranty || "");
+        formData.append("stock", stock ? Number(stock) : 0);
 
-      let res;
-      if (product && product._id) {
-        res = await API.put(`/products/${product._id}`, productData);
+        let res;
+        if (product && product._id) {
+          res = await fetch(`${baseURL}/products/${product._id}`, {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("adminToken")}`
+            },
+            body: formData
+          });
+        } else {
+          res = await fetch(`${baseURL}/products`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("adminToken")}`
+            },
+            body: formData
+          });
+        }
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "حدث خطأ");
+
+        alert(product ? "تم تحديث المنتج بنجاح" : "تم إضافة المنتج بنجاح");
+        if (onAdded) onAdded(data);
       } else {
-        res = await API.post("/products", productData);
-      }
+        // إذا كان هناك رابط صورة فقط، استخدم JSON
+        const productData = {
+          name,
+          price: Number(price),
+          description,
+          category,
+          subcategory,
+          type: type || "",
+          image,
+          rating: rating ? Number(rating) : 0,
+          warranty: warranty || "",
+          stock: stock ? Number(stock) : 0
+        };
 
-      alert(product ? "تم تحديث المنتج بنجاح" : "تم إضافة المنتج بنجاح");
-      if (onAdded) onAdded(res.data);
+        let res;
+        if (product && product._id) {
+          res = await API.put(`/products/${product._id}`, productData);
+        } else {
+          res = await API.post("/products", productData);
+        }
+
+        alert(product ? "تم تحديث المنتج بنجاح" : "تم إضافة المنتج بنجاح");
+        if (onAdded) onAdded(res.data);
+      }
       
       // Reset form
       setName("");
@@ -130,12 +201,18 @@ export default function ProductForm({ onAdded, product = null }) {
       setSubcategory("");
       setType("");
       setImage("");
+      setImageFile(null);
+      setImagePreview("");
       setRating("");
       setWarranty("");
       setStock("");
+      
+      // Reset file input
+      const fileInput = document.getElementById("imageFileInput");
+      if (fileInput) fileInput.value = "";
     } catch (err) {
       console.error(err);
-      alert("حدث خطأ أثناء حفظ المنتج");
+      alert("حدث خطأ أثناء حفظ المنتج: " + (err.message || "خطأ غير معروف"));
     }
   };
 
@@ -235,14 +312,69 @@ export default function ProductForm({ onAdded, product = null }) {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>
-        <input
-          type="text"
-          placeholder="رابط الصورة"
-          value={image}
-          onChange={(e) => setImage(e.target.value)}
-          required
-        />
+      {/* قسم الصورة */}
+      <div style={{ marginBottom: "1rem" }}>
+        <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "600" }}>
+          الصورة *
+        </label>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "0.5rem", marginBottom: "0.5rem" }}>
+          <input
+            type="text"
+            placeholder="رابط الصورة (أو اختر صورة من الجهاز)"
+            value={image}
+            onChange={(e) => {
+              setImage(e.target.value);
+              if (e.target.value) {
+                setImageFile(null);
+                setImagePreview(e.target.value);
+                const fileInput = document.getElementById("imageFileInput");
+                if (fileInput) fileInput.value = "";
+              }
+            }}
+            style={{ width: "100%", padding: "0.5rem", borderRadius: "0.25rem", border: "1px solid #ddd" }}
+          />
+          <label
+            htmlFor="imageFileInput"
+            style={{
+              padding: "0.5rem 1rem",
+              borderRadius: "0.25rem",
+              border: "1px solid #2563eb",
+              backgroundColor: "#2563eb",
+              color: "white",
+              cursor: "pointer",
+              textAlign: "center",
+              whiteSpace: "nowrap",
+              fontWeight: "500"
+            }}
+          >
+            اختر صورة
+          </label>
+          <input
+            id="imageFileInput"
+            type="file"
+            accept="image/*"
+            onChange={handleImageFileChange}
+            style={{ display: "none" }}
+          />
+        </div>
+        {imagePreview && (
+          <div style={{ marginTop: "0.5rem" }}>
+            <img 
+              src={imagePreview} 
+              alt="معاينة الصورة" 
+              style={{ 
+                maxWidth: "200px", 
+                maxHeight: "200px", 
+                borderRadius: "0.25rem",
+                border: "1px solid #ddd",
+                objectFit: "cover"
+              }} 
+            />
+          </div>
+        )}
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>
         <input
           type="number"
           placeholder="التقييم (0-5)"

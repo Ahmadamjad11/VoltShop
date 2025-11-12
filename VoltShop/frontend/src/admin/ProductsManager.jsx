@@ -20,6 +20,8 @@ export default function ProductsManager() {
     warranty: "",
     stock: ""
   });
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -104,25 +106,78 @@ export default function ProductsManager() {
 
   const save = async (e) => {
     e.preventDefault();
+    
+    // التحقق من وجود رابط صورة أو ملف صورة
+    if (!form.image && !imageFile) {
+      alert("يرجى إدخال رابط الصورة أو اختيار صورة من الجهاز");
+      return;
+    }
+    
     setSaving(true);
     
     try {
-      const productData = {
-        ...form,
-        price: Number(form.price),
-        description: form.description || "",
-        type: form.type || "",
-        rating: Number(form.rating) || 0,
-        stock: Number(form.stock) || 0
-      };
+      // استخدام localhost للتطوير المحلي
+      const baseURL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+      console.log("🌐 Using API URL:", baseURL);
+      
+      // إذا كان هناك ملف صورة، استخدم FormData
+      if (imageFile) {
+        const formData = new FormData();
+        formData.append("name", form.name);
+        formData.append("price", Number(form.price));
+        formData.append("description", form.description || "");
+        formData.append("category", form.category);
+        formData.append("subcategory", form.subcategory);
+        formData.append("type", form.type || "");
+        formData.append("image", imageFile);
+        formData.append("rating", form.rating ? Number(form.rating) : 0);
+        formData.append("warranty", form.warranty || "");
+        formData.append("stock", form.stock ? Number(form.stock) : 0);
 
-      if (editingId) {
-        await API.put(`/products/${editingId}`, productData);
-        setEditingId(null);
+        let res;
+        if (editingId) {
+          res = await fetch(`${baseURL}/products/${editingId}`, {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("adminToken")}`
+            },
+            body: formData
+          });
+        } else {
+          res = await fetch(`${baseURL}/products`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("adminToken")}`
+            },
+            body: formData
+          });
+        }
+
+        const data = await res.json();
+        if (!res.ok) {
+          const errorMsg = data.message || data.error || "حدث خطأ";
+          console.error('Server error response:', data);
+          throw new Error(errorMsg);
+        }
       } else {
-        await API.post("/products", productData);
+        // إذا كان هناك رابط صورة فقط، استخدم JSON
+        const productData = {
+          ...form,
+          price: Number(form.price),
+          description: form.description || "",
+          type: form.type || "",
+          rating: Number(form.rating) || 0,
+          stock: Number(form.stock) || 0
+        };
+
+        if (editingId) {
+          await API.put(`/products/${editingId}`, productData);
+        } else {
+          await API.post("/products", productData);
+        }
       }
       
+      setEditingId(null);
       setForm({ 
         name: "", 
         price: "", 
@@ -135,14 +190,22 @@ export default function ProductsManager() {
         warranty: "",
         stock: ""
       });
+      setImageFile(null);
+      setImagePreview("");
       setSubcategories([]);
       setTypes([]);
+      
+      // Reset file input
+      const fileInput = document.getElementById("imageFileInput");
+      if (fileInput) fileInput.value = "";
+      
       loadProducts();
       
       // Show success message
+      const wasEditing = editingId !== null;
       const message = document.createElement('div');
       message.className = 'success-message';
-      message.textContent = editingId ? 'تم تحديث المنتج بنجاح!' : 'تم إضافة المنتج بنجاح!';
+      message.textContent = wasEditing ? 'تم تحديث المنتج بنجاح!' : 'تم إضافة المنتج بنجاح!';
       message.style.position = 'fixed';
       message.style.top = '100px';
       message.style.right = '20px';
@@ -162,10 +225,25 @@ export default function ProductsManager() {
       }, 3000);
       
     } catch (err) {
-      console.error(err);
-      alert("خطأ بحفظ المنتج");
+      console.error("Error saving product:", err);
+      const errorMessage = err.message || "حدث خطأ أثناء حفظ المنتج";
+      alert(`خطأ بحفظ المنتج: ${errorMessage}`);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleImageFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      setForm({...form, image: ""}); // مسح رابط الصورة عند اختيار ملف
+      // إنشاء معاينة للصورة
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -183,6 +261,8 @@ export default function ProductsManager() {
       warranty: p.warranty || "",
       stock: p.stock || ""
     });
+    setImagePreview(p.image || "");
+    setImageFile(null);
     // Load subcategories and types for editing
     if (p.category) {
       loadSubcategories(p.category);
@@ -241,8 +321,13 @@ export default function ProductsManager() {
       warranty: "",
       stock: ""
     });
+    setImageFile(null);
+    setImagePreview("");
     setSubcategories([]);
     setTypes([]);
+    // Reset file input
+    const fileInput = document.getElementById("imageFileInput");
+    if (fileInput) fileInput.value = "";
   };
 
   // Filter products
@@ -334,20 +419,75 @@ export default function ProductsManager() {
             </div>
 
             <div className="form-row">
-              <div className="form-group">
+              <div className="form-group" style={{ gridColumn: "1 / -1" }}>
                 <label>
                   <i className="fas fa-image"></i>
-                  رابط الصورة
+                  الصورة *
                 </label>
-                <input 
-                  placeholder="أدخل رابط الصورة" 
-                  value={form.image} 
-                  onChange={e => setForm({...form, image: e.target.value})} 
-                  disabled={saving}
-                />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                  <input 
+                    placeholder="رابط الصورة (أو اختر صورة من الجهاز)" 
+                    value={form.image} 
+                    onChange={e => {
+                      setForm({...form, image: e.target.value});
+                      if (e.target.value) {
+                        setImageFile(null);
+                        setImagePreview(e.target.value);
+                        const fileInput = document.getElementById("imageFileInput");
+                        if (fileInput) fileInput.value = "";
+                      }
+                    }} 
+                    disabled={saving}
+                  />
+                  <label
+                    htmlFor="imageFileInput"
+                    style={{
+                      padding: "0.5rem 1rem",
+                      borderRadius: "0.25rem",
+                      border: "1px solid #2563eb",
+                      backgroundColor: "#2563eb",
+                      color: "white",
+                      cursor: "pointer",
+                      textAlign: "center",
+                      whiteSpace: "nowrap",
+                      fontWeight: "500",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center"
+                    }}
+                  >
+                    <i className="fas fa-upload" style={{ marginLeft: "0.5rem" }}></i>
+                    اختر صورة
+                  </label>
+                  <input
+                    id="imageFileInput"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageFileChange}
+                    style={{ display: "none" }}
+                    disabled={saving}
+                  />
+                </div>
+                {imagePreview && (
+                  <div style={{ marginTop: "0.5rem" }}>
+                    <img 
+                      src={imagePreview} 
+                      alt="معاينة الصورة" 
+                      style={{ 
+                        maxWidth: "200px", 
+                        maxHeight: "200px", 
+                        borderRadius: "0.25rem",
+                        border: "1px solid #ddd",
+                        objectFit: "cover"
+                      }} 
+                    />
+                  </div>
+                )}
               </div>
+            </div>
 
-              <div className="form-group">
+            <div className="form-row">
+              <div className="form-group" style={{ gridColumn: "1 / -1" }}>
                 <label>
                   <i className="fas fa-align-right"></i>
                   الوصف

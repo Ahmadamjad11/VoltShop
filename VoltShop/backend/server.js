@@ -3,6 +3,8 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
 // استيراد Routes
 import productRoutes from './routes/products.js';
@@ -15,11 +17,33 @@ import contactRoutes from './routes/contacts.js';
 
 dotenv.config();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 const app = express();
 
 // Middlewares
 app.use(cors());           // للسماح بالطلبات من أي دومين
-app.use(express.json());   // لتحويل JSON تلقائيًا
+
+// ملاحظة: express.json() و express.urlencoded() يجب أن يكونا قبل routes
+// لكن multer يتعامل مع multipart/form-data بشكل مختلف
+// لذلك نستخدم express.json() و express.urlencoded() فقط للطلبات غير multipart
+// لكن يجب أن نستخدم middleware شرطي للتحقق من Content-Type
+app.use((req, res, next) => {
+  // إذا كان Content-Type هو multipart/form-data، تخطي express.json و express.urlencoded
+  // لأن multer سيتعامل معه
+  const contentType = req.get('content-type') || '';
+  if (contentType.includes('multipart/form-data')) {
+    return next();
+  }
+  // للطلبات الأخرى، استخدم express.json و express.urlencoded
+  express.json()(req, res, () => {
+    express.urlencoded({ extended: true, limit: '10mb' })(req, res, next);
+  });
+});
+
+// تقديم الملفات الثابتة من مجلد uploads
+app.use('/uploads', express.static(join(__dirname, 'uploads')));
 
 // ربط قاعدة البيانات MongoDB
 const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/voltshop";
