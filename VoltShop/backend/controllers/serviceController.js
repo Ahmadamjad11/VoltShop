@@ -1,4 +1,5 @@
 import Service from '../models/Service.js';
+import { sendServiceNotification } from '../utils/emailService.js';
 
 // إنشاء طلب خدمة جديد
 export const createService = async (req, res) => {
@@ -10,6 +11,17 @@ export const createService = async (req, res) => {
     
     const service = new Service(serviceData);
     await service.save();
+    
+    // إرسال إشعار البريد الإلكتروني (غير متزامن)
+    setTimeout(() => {
+      sendServiceNotification(service).then(success => {
+        if (success) {
+          console.log('🎉 تم إرسال إشعار طلب الخدمة للإدارة بنجاح');
+        } else {
+          console.log('⚠️ لم يتم إرسال إشعار طلب الخدمة، ولكن الطلب تم حفظه');
+        }
+      });
+    }, 1000);
     
     res.status(201).json({
       success: true,

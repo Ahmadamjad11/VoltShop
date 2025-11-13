@@ -1,5 +1,6 @@
 import Contact from '../models/Contact.js';
 import nodemailer from 'nodemailer';
+import { sendContactNotification } from '../utils/emailService.js';
 
 // simple transporter factory using env variables
 function buildTransporter() {
@@ -26,6 +27,17 @@ export const createContact = async (req, res) => {
     
     const contact = new Contact(contactData);
     await contact.save();
+    
+    // إرسال إشعار البريد الإلكتروني (غير متزامن)
+    setTimeout(() => {
+      sendContactNotification(contact).then(success => {
+        if (success) {
+          console.log('🎉 تم إرسال إشعار الرسالة للإدارة بنجاح');
+        } else {
+          console.log('⚠️ لم يتم إرسال إشعار الرسالة، ولكن الرسالة تم حفظها');
+        }
+      });
+    }, 1000);
     
     res.status(201).json({
       success: true,
